@@ -32,6 +32,14 @@ sudo bash install-repository.sh
 sudo apt install indi-bin indi-3rdparty kstars
 ```
 
+Or, if you trust the repository and want to skip manual inspection, use this one-liner:
+
+```sh
+curl -fL https://darkdragonsastro.github.io/rpi-astro/install-repository.sh -o install-repository.sh && sudo bash install-repository.sh && sudo apt install indi-bin indi-3rdparty kstars
+```
+
+This downloads the complete script before running it as root; each step must succeed before the next runs.
+
 The script checks the OS suite, ARM64 architecture and signing-key fingerprint, then creates a deb822 `.sources` file with a repository-specific `Signed-By` key. It enables `deb-src` too, so `apt source kstars` retrieves matching source and packaging. Compare the script's fingerprint with the independently recorded maintainer fingerprint before first use. It refuses to overwrite an existing repository configuration.
 
 For an existing repository installation, run `sudo apt update && sudo apt install indi-3rdparty`. This installs both aggregate third-party packages. They replace conflicting individually packaged drivers/libraries (such as `indi-eqmod` and `indi-gphoto`); review APT's proposed changes if you have packages from another astronomy repository.
