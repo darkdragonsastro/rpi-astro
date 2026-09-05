@@ -109,6 +109,10 @@ class RepositoryTest(unittest.TestCase):
                         self.assertEqual(len(list(apt.glob("*.deb"))), 1)
                         release = site / "dists" / suite / "InRelease"
                         release.write_text(release.read_text().replace("Origin: RPi-Astro", "Origin: Tampered!"))
+                        # HTTP dates have one-second precision. Force a changed Last-Modified
+                        # so the server returns the modified bytes, not a cache-validating 304.
+                        modified = release.stat().st_mtime + 2
+                        os.utime(release, (modified, modified))
                         with self.assertRaises(subprocess.CalledProcessError):
                             run("apt-get", *options, "update", "--error-on=any")
                 finally:
