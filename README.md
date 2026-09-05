@@ -19,6 +19,9 @@ After the first successful Pages publication, the repository will be at:
 
 <https://darkdragonsastro.github.io/rpi-astro/>
 
+Archive signing-key fingerprint: `F5E24E97F7FD6F6DC5DBDB3191110672353D9DA6`.
+The [public key](archive-key.asc) expires September 4, 2028.
+
 Download and inspect the setup script, then run it:
 
 ```sh
