@@ -21,3 +21,11 @@ Each built upstream project retains its own license. The builder copies its
 upstream copyright/license notice into the Debian packaging, and the original
 source archive plus packaging changes are published alongside binaries. The
 tooling's MIT license does not relicense upstream software or bundled data.
+
+Bookworm amd64 uses the official QHY SDK 26.7.28.15 archive pinned in
+`sources.json` instead of INDI's bundled QHY SDK. Its complete vendor archive
+is retained in the library Debian source package as the `qhybookworm` orig
+component, with download/checksum provenance installed in `qhybookworm.json`.
+The QHY attribution and license notice supplied by INDI is preserved under
+`upstream-notices/debian/libqhy/copyright`; all other targets use INDI's bundled
+SDK. The vendor installer is not executed.

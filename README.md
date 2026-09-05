@@ -2,7 +2,7 @@
 
 An open, signed APT repository for astronomy software on **Debian Bookworm and Trixie (amd64 and arm64)**, including **64-bit Raspberry Pi OS**. Packages are built from pinned upstream sources on native GitHub Actions runners, separately inside each matching Debian release.
 
-The repository is live for ARM64; amd64 support is being validated for the next publication. CI builds all four suite/architecture targets, checks distro upgrades and INDI simulators, and verifies public APT installations, installed-file integrity and matching source downloads after deployment. Real desktop, camera, mount and imaging-session tests remain necessary before relying on a release in the field.
+The repository is live for ARM64 and amd64. CI builds all four suite/architecture targets, checks distro upgrades and INDI simulators, and verifies public APT installations, installed-file integrity and matching source downloads after deployment. Real desktop, camera, mount and imaging-session tests remain necessary before relying on a release in the field.
 
 | Software | Initial upstream version | Packages |
 | --- | --- | --- |
@@ -48,7 +48,7 @@ Third-party coverage follows the upstream default build, plus Webcam and NUT sup
 
 QHY FX3 firmware loading uses a private `rpi-astro-fxload` helper built from pinned libusb examples; legacy SBIG/DSI rules use Debian's `fxload`. The pinned upstream release omits `QHY492.img`, so QHY492 firmware loading is not provided. ASI's optional power-driver rules that grant global USB sysfs write access are omitted; vendor-specific camera permissions remain. Reconnect USB equipment after installation so udev applies the new rules.
 
-**Bookworm amd64 compatibility exception:** the QHY driver, SDK, firmware and udev rules are **excluded** because the current x64 SDK requires newer glibc/C++ runtime libraries than Bookworm provides. An older SDK also lacks APIs required by the current driver, so no fallback is shipped. QHY **26.7.21** remains included on Bookworm ARM64 and both Trixie architectures. For QHY equipment on an Intel/AMD PC, use Debian Trixie.
+**Bookworm amd64 compatibility exception (revision 6, pending publication):** QHY is enabled using the official QHY **26.7.28.15** SDK, with its matching headers, firmware and udev rules. Its archive and library checksums are pinned in `sources.json`; the vendor installer is never run. This replaces INDI's bundled x64 SDK, which requires newer runtimes than Bookworm provides, without patching the QHY driver. Bookworm ARM64 and both Trixie architectures retain bundled QHY **26.7.21**. The currently published revision 5 still excludes QHY on Bookworm amd64 until revision 6 passes validation and is published.
 
 Use the suite matching your installed OS. Do not point Bookworm at Trixie packages. A 64-bit CPU running a 32-bit OS is not supported. Our build flags do not use `-march=native`; vendor SDK hardware requirements still apply. Ubuntu and other Debian derivatives are not tested targets.
 

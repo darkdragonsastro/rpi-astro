@@ -32,7 +32,7 @@ def prepare_packaging(source: Path, name: str):
     if name.endswith("drivers"):
         control = control.replace("Depends: ${shlibs:Depends}, ${misc:Depends}, indi-3rdparty-libs",
                                   "Depends: ${shlibs:Depends}, ${misc:Depends}, indi-bin, indi-3rdparty-libs (= ${binary:Version})")
-        control += "\n\nPackage: indi-3rdparty\nArchitecture: all\nDepends: ${misc:Depends}, indi-3rdparty-drivers (= ${source:Version})\nDescription: INDI third-party driver collection\n Installs the third-party drivers and their vendor support libraries.\n QHY is excluded on Bookworm amd64 due to SDK incompatibility.\n"
+        control += "\n\nPackage: indi-3rdparty\nArchitecture: all\nDepends: ${misc:Depends}, indi-3rdparty-drivers (= ${source:Version})\nDescription: INDI third-party driver collection\n Installs the third-party drivers and their vendor support libraries.\n"
     # Supplement upstream's aggregate conflict list for other distro package names.
     extras = ("libapogee3v5, libqsi9, libqsi9t64, asi-common, firmware-ccd" if name.endswith("libs")
               else "indi-atik-efw, libusbp1, libusbp-dev, libpololu-tic-1, libpololu-tic-dev, pololu-tic")

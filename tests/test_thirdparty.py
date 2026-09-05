@@ -1,4 +1,5 @@
 import importlib.util
+import json
 from pathlib import Path
 import tempfile
 import unittest
@@ -12,16 +13,19 @@ spec.loader.exec_module(thirdparty)
 
 
 class ThirdPartyPackagingTests(unittest.TestCase):
-    def test_qhy_exclusion_payload_check(self):
+    def test_qhy_version_selection(self):
         script = Path(__file__).resolve().parents[1] / "scripts/test-thirdparty.py"
-        check = runpy.run_path(str(script))["check_qhy_excluded"]
-        check(["/usr/bin/indi_asi_ccd", "/usr/share/doc/indi-3rdparty-libs/upstream-notices/debian/libqhy/copyright"])
-        for payload in ("/usr/bin/indi_qhy_ccd", "/usr/bin/qhy_ccd_test",
-                        "/usr/lib/x86_64-linux-gnu/libqhyccd.so.20", "/usr/include/libqhy/qhyccd.h",
-                        "/usr/lib/firmware/qhy/QHY268.img", "/usr/lib/udev/rules.d/85-qhyccd.rules",
-                        "/usr/share/indi/indi_qhy.xml"):
-            with self.subTest(payload=payload), self.assertRaisesRegex(AssertionError, "Unexpected QHY payload"):
-                check([payload])
+        expected = runpy.run_path(str(script))["expected_qhy_version"]
+        with tempfile.TemporaryDirectory() as folder:
+            docs = Path(folder)
+            with self.assertRaises(FileNotFoundError):
+                expected(True, "amd64", docs)
+            (docs / "qhybookworm.json").write_text(json.dumps(
+                {"version": "26.7.28.15", "suite": "bookworm", "architecture": "amd64"}))
+            for bookworm in (True, False):
+                for architecture in ("arm64", "amd64"):
+                    version = (26, 7, 28, 15) if bookworm and architecture == "amd64" else (26, 7, 21)
+                    self.assertEqual(expected(bookworm, architecture, docs), version)
 
     def test_rule_adaptation_without_qhy(self):
         script = Path(__file__).resolve().parents[1] / "packaging/indi-3rdparty-libs/fix-udev.py"

@@ -3,11 +3,14 @@
 
 import argparse
 import datetime
+import hashlib
 import json
 import os
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 import shutil
 import subprocess
+import tarfile
+import tempfile
 from thirdparty import prepare_packaging
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -22,6 +25,9 @@ def run(*args, cwd=None, **kwargs):
 def add_components(package, checkout, work, source):
     """Create pinned supplementary orig archives alongside the main source archive."""
     for component in package.get("components", []):
+        if "url" in component:
+            add_archive_component(package, component, work, source)
+            continue
         run("git", "-C", checkout, "fetch", "--depth=1", package["url"], component["commit"])
         fetched = subprocess.check_output(
             ["git", "-C", str(checkout), "rev-parse", "FETCH_HEAD"], text=True
@@ -42,6 +48,42 @@ def add_components(package, checkout, work, source):
             if status:
                 raise subprocess.CalledProcessError(status, producer.args)
         run("tar", "-xf", supplement, "-C", source)
+
+
+def add_archive_component(package, component, work, source):
+    """Keep a checksum-pinned vendor archive byte-for-byte in the source package."""
+    supplement = work / f"{package['name']}_{package['version']}.orig-{component['name']}.tar.gz"
+    run("curl", "--fail", "--silent", "--show-error", "--location", "--retry", "3", "--proto", "=https",
+        "--proto-redir", "=https", "--output", supplement, component["url"])
+    if hashlib.sha256(supplement.read_bytes()).hexdigest() != component["sha256"]:
+        raise SystemExit(f"Checksum mismatch for {component['name']}")
+    # Debian supplementary orig archives strip their single top-level directory.
+    # Extract safely and reproduce that layout; never execute a vendor installer.
+    with tempfile.TemporaryDirectory(dir=work) as directory:
+        with tarfile.open(supplement) as archive:
+            extract_vendor_archive(archive, directory)
+        roots = list(Path(directory).iterdir())
+        if len(roots) != 1 or not roots[0].is_dir() or roots[0].is_symlink():
+            raise SystemExit(f"Expected one root directory in {component['name']}")
+        shutil.move(roots[0], source / component["name"])
+
+
+def extract_vendor_archive(archive, directory):
+    """Validate before extracting, including on Bookworm's older Python tarfile."""
+    members = archive.getmembers()
+    links = {PurePosixPath(member.name) for member in members if member.issym()}
+    for member in members:
+        path = PurePosixPath(member.name)
+        if (path.is_absolute() or ".." in path.parts
+                or not (member.isfile() or member.isdir() or member.issym())
+                or any(parent in links for parent in path.parents)):
+            raise ValueError(f"Unsafe vendor archive member: {member.name}")
+        if member.issym():
+            target = PurePosixPath(member.linkname)
+            if target.is_absolute() or ".." in target.parts:
+                raise ValueError(f"Unsafe vendor archive link: {member.name}")
+    # No special files, traversal, absolute links, or writes through symlink parents.
+    archive.extractall(directory)
 
 
 def build(suite, only=None):

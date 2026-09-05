@@ -3,5 +3,5 @@ set -euo pipefail
 export DEBIAN_FRONTEND=noninteractive
 apt-get update
 apt-get install -y --no-install-recommends \
-  build-essential ca-certificates git python3 debhelper devscripts \
+  build-essential ca-certificates curl git python3 debhelper devscripts \
   cmake pkg-config ninja-build fakeroot

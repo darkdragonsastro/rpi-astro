@@ -1,4 +1,6 @@
 import importlib.util
+import hashlib
+import io
 from pathlib import Path
 import shutil
 import subprocess
@@ -6,6 +8,7 @@ import sys
 import tarfile
 import tempfile
 import unittest
+from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
@@ -16,6 +19,95 @@ spec.loader.exec_module(build)
 
 @unittest.skipUnless(shutil.which("git") and shutil.which("xz"), "Requires git and xz")
 class ComponentTests(unittest.TestCase):
+    def test_vendor_archive_checksum_layout_and_source_roundtrip(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            vendor = root / "vendor.tar.gz"
+            with tarfile.open(vendor, "w:gz") as archive:
+                entry = tarfile.TarInfo("sdk/usr/local/lib/library.so.1")
+                entry.size = 3
+                archive.addfile(entry, io.BytesIO(b"sdk"))
+                link = tarfile.TarInfo("sdk/usr/local/lib/library.so")
+                link.type = tarfile.SYMTYPE
+                link.linkname = "library.so.1"
+                archive.addfile(link)
+            source = root / "fixture-1.0"
+            source.mkdir()
+            (source / "README").write_text("Main source\n")
+            with tarfile.open(root / "fixture_1.0.orig.tar.xz", "w:xz") as archive:
+                archive.add(source, arcname=source.name)
+            component = {"name": "qhybookworm", "url": "https://example.invalid/sdk.tar.gz",
+                         "sha256": hashlib.sha256(vendor.read_bytes()).hexdigest()}
+            package = {"name": "fixture", "version": "1.0", "components": [component]}
+            def download(*args):
+                self.assertEqual(args[0], "curl")
+                shutil.copyfile(vendor, args[args.index("--output") + 1])
+            with patch.object(build, "run", side_effect=download):
+                build.add_components(package, None, root, source)
+            supplement = root / "fixture_1.0.orig-qhybookworm.tar.gz"
+            self.assertEqual(supplement.read_bytes(), vendor.read_bytes())
+            self.assertEqual((source / "qhybookworm/usr/local/lib/library.so").read_bytes(), b"sdk")
+            if shutil.which("dpkg-source"):
+                debian = source / "debian"
+                (debian / "source").mkdir(parents=True)
+                (debian / "source/format").write_text("3.0 (quilt)\n")
+                (debian / "control").write_text(
+                    "Source: fixture\nSection: science\nPriority: optional\nMaintainer: Test <test@example.invalid>\n\n"
+                    "Package: fixture\nArchitecture: any\nDescription: fixture\n")
+                (debian / "rules").write_text("#!/usr/bin/make -f\n%:\n\ttrue\n")
+                (debian / "rules").chmod(0o755)
+                (debian / "changelog").write_text(
+                    "fixture (1.0-1) bookworm; urgency=low\n\n  * Test.\n\n"
+                    " -- Test <test@example.invalid>  Fri, 04 Sep 2026 12:00:00 +0000\n")
+                subprocess.run(["dpkg-source", "-b", str(source)], cwd=root, check=True, capture_output=True)
+                dsc = root / "fixture_1.0-1.dsc"
+                self.assertIn("orig-qhybookworm.tar.gz", dsc.read_text())
+                subprocess.run(["dpkg-source", "--no-check", "-x", str(dsc), str(root / "rebuilt")],
+                               check=True, capture_output=True)
+                self.assertEqual((root / "rebuilt/qhybookworm/usr/local/lib/library.so").read_bytes(), b"sdk")
+            component["sha256"] = "0" * 64
+            with patch.object(build, "run", side_effect=download), self.assertRaisesRegex(SystemExit, "Checksum mismatch"):
+                build.add_components(package, None, root, source)
+
+    def test_vendor_archive_rejects_path_escape(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            vendor = root / "vendor.tar.gz"
+            with tarfile.open(vendor, "w:gz") as archive:
+                entry = tarfile.TarInfo("../../escape")
+                entry.size = 3
+                archive.addfile(entry, io.BytesIO(b"bad"))
+            component = {"name": "qhybookworm", "url": "https://example.invalid/sdk.tar.gz",
+                         "sha256": hashlib.sha256(vendor.read_bytes()).hexdigest()}
+            def download(*args):
+                shutil.copyfile(vendor, args[args.index("--output") + 1])
+            with patch.object(build, "run", side_effect=download), self.assertRaisesRegex(ValueError, "Unsafe vendor archive"):
+                build.add_archive_component({"name": "fixture", "version": "1.0"}, component, root, root)
+
+    def test_vendor_archive_rejects_unsafe_links_and_special_files(self):
+        for kind, target in ((tarfile.SYMTYPE, "/outside"), (tarfile.SYMTYPE, "../../outside"),
+                             (tarfile.LNKTYPE, "sdk/file"), (tarfile.FIFOTYPE, "")):
+            with self.subTest(kind=kind, target=target), tempfile.TemporaryDirectory() as directory:
+                data = io.BytesIO()
+                with tarfile.open(fileobj=data, mode="w") as archive:
+                    entry = tarfile.TarInfo("sdk/link")
+                    entry.type, entry.linkname = kind, target
+                    archive.addfile(entry)
+                data.seek(0)
+                with tarfile.open(fileobj=data) as archive, self.assertRaisesRegex(ValueError, "Unsafe vendor archive"):
+                    build.extract_vendor_archive(archive, directory)
+        # Reject writes through even an otherwise internal symlink directory.
+        with tempfile.TemporaryDirectory() as directory:
+            data = io.BytesIO()
+            with tarfile.open(fileobj=data, mode="w") as archive:
+                entry = tarfile.TarInfo("sdk/link")
+                entry.type, entry.linkname = tarfile.SYMTYPE, "target"
+                archive.addfile(entry)
+                archive.addfile(tarfile.TarInfo("sdk/link/file"))
+            data.seek(0)
+            with tarfile.open(fileobj=data) as archive, self.assertRaisesRegex(ValueError, "Unsafe vendor archive"):
+                build.extract_vendor_archive(archive, directory)
+
     def test_pinned_component_and_debian_source_roundtrip(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -67,7 +159,7 @@ class ComponentTests(unittest.TestCase):
 
     @unittest.skipUnless(shutil.which("dpkg-parsechangelog") and Path("/usr/share/dpkg/architecture.mk").exists(),
                          "Requires Debian packaging tools")
-    def test_qhy_excluded_only_for_bookworm_amd64(self):
+    def test_vendor_sdk_selected_only_for_bookworm_amd64(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             (root / "debian").mkdir()
@@ -81,6 +173,11 @@ class ComponentTests(unittest.TestCase):
                         result = subprocess.check_output(
                             ["make", "-n", "-f", str(rules), f"DEB_HOST_ARCH={architecture}", "override_dh_auto_configure"],
                             cwd=root, text=True)
-                        expected = "OFF" if (suite, architecture) == ("bookworm", "amd64") else "ON"
+                        vendor = (suite, architecture, package) == ("bookworm", "amd64", "indi-3rdparty-libs")
+                        expected = "OFF" if vendor else "ON"
                         self.assertIn(f"-DWITH_QHY={expected}", result)
                         self.assertNotIn("RPI_ASTRO_QHY_BOOKWORM", result)
+                        result = subprocess.check_output(
+                            ["make", "-n", "-f", str(rules), f"DEB_HOST_ARCH={architecture}", "override_dh_auto_install"],
+                            cwd=root, text=True)
+                        self.assertEqual("debian/install-qhy.py" in result, vendor)

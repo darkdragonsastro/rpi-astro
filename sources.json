@@ -1,5 +1,5 @@
 {
-  "revision": 5,
+  "revision": 6,
   "packages": [
     {
       "name": "libxisf",
@@ -28,7 +28,18 @@
       "url": "https://github.com/indilib/indi-3rdparty.git",
       "commit": "28607cc2ad5283f9db1917bcbc6069988745888d",
       "copyright": "LICENSE",
-      "upstream_packaging": true
+      "upstream_packaging": true,
+      "components": [
+        {
+          "name": "qhybookworm",
+          "version": "26.7.28.15",
+          "suite": "bookworm",
+          "architecture": "amd64",
+          "url": "https://www.qhyccd.com/file/repository/publish/SDK/260728/sdk_linux64_26.07.28.tar.gz",
+          "sha256": "780f71b1e82d14ca707fafc3854a3b9608c56a7f0e5935d8a6ff958adda336b1",
+          "library_sha256": "66cd17ab5ed185159128fc1384d9344e2c512641cf306c359769d4beca3b9557"
+        }
+      ]
     },
     {
       "name": "indi-3rdparty-drivers",

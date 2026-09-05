@@ -147,8 +147,8 @@ def publish(packages, output, fingerprint, base_url, max_bytes=900_000_000):
         '<p>Source packages are available with <code>apt source</code>. '
         'Third-party packages include upstream default-enabled drivers and vendor libraries for each architecture. '
         'Optional default-off drivers and large plate-solving index sets are not included.</p>'
-        '<p>QHY drivers and SDK are excluded on Bookworm amd64 due to SDK incompatibility; '
-        'QHY remains available on Bookworm arm64 and both Trixie architectures.</p>'
+        '<p>Bookworm amd64 uses the official QHY SDK 26.7.28.15 for runtime compatibility; '
+        'Bookworm arm64 and both Trixie architectures use INDI\'s bundled QHY SDK 26.7.21.</p>'
         f'{rows}</body></html>\n'
     )
     size = sum(p.stat().st_size for p in output.rglob("*") if p.is_file())

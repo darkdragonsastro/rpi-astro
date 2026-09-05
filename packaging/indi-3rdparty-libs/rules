@@ -6,6 +6,8 @@ include /usr/share/dpkg/architecture.mk
 WITH_QHY = ON
 ifeq ($(shell dpkg-parsechangelog -S Distribution)/$(DEB_HOST_ARCH),bookworm/amd64)
 WITH_QHY = OFF
+# Stage the official vendor SDK after installation instead of the bundled SDK.
+QHY_VENDOR = yes
 endif
 %:
 	dh $@ --buildsystem=cmake+ninja
@@ -15,7 +17,10 @@ override_dh_auto_test:
 	# Hardware-dependent upstream tests are covered separately by runtime smoke checks.
 override_dh_auto_install:
 	dh_auto_install
-	RPI_ASTRO_WITH_QHY=$(WITH_QHY) python3 debian/fix-udev.py
+ifeq ($(QHY_VENDOR),yes)
+	python3 debian/install-qhy.py $(DEB_HOST_MULTIARCH)
+endif
+	python3 debian/fix-udev.py
 override_dh_dwz:
 	# Vendor binaries may use unsupported or already stripped debug formats.
 override_dh_strip:

@@ -4,9 +4,6 @@ export DEB_CFLAGS_MAINT_APPEND = -fno-strict-aliasing -fPIC
 export DEB_CXXFLAGS_MAINT_APPEND = -fno-strict-aliasing -fPIC
 include /usr/share/dpkg/architecture.mk
 WITH_QHY = ON
-ifeq ($(shell dpkg-parsechangelog -S Distribution)/$(DEB_HOST_ARCH),bookworm/amd64)
-WITH_QHY = OFF
-endif
 %:
 	dh $@ --buildsystem=cmake+ninja
 override_dh_auto_configure:

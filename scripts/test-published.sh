@@ -38,5 +38,17 @@ test -z "$integrity" || { printf '%s\n' "$integrity"; exit 1; }
 QT_QPA_PLATFORM=offscreen kstars --version
 mkdir /tmp/astro-source
 cd /tmp/astro-source
-apt-get source --download-only indi-3rdparty-drivers
+apt-get source --download-only indi-3rdparty-drivers indi-3rdparty-libs
+python3 - <<'PY'
+import hashlib
+import json
+from pathlib import Path
+
+manifest = json.loads(Path('/sources.json').read_text())
+for package in manifest['packages']:
+    for component in package.get('components', []):
+        if 'url' in component:
+            archive = Path(f"{package['name']}_{package['version']}.orig-{component['name']}.tar.gz")
+            assert hashlib.sha256(archive.read_bytes()).hexdigest() == component['sha256'], archive
+PY
 echo "Published installation, integrity and source download verified on $architecture"
