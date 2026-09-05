@@ -60,7 +60,7 @@ class ThirdPartyPackagingTests(unittest.TestCase):
             control = (prepared / "control").read_text()
             self.assertIn("indi-3rdparty-libs (= ${binary:Version})", control)
             self.assertIn("Package: indi-3rdparty\n", control)
-            self.assertIn("Architecture: arm64\n", control)
+            self.assertIn("Architecture: arm64 amd64\n", control)
             self.assertIn("libcurl4-gnutls-dev", control)
             self.assertNotIn("libcurl4-openssl-dev", control)
             self.assertEqual((prepared / "upstream-notices/libasi/license.txt").read_bytes(), b"Vendor notice\n")

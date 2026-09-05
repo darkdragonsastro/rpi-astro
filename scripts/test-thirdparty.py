@@ -12,6 +12,8 @@ import xml.etree.ElementTree as ET
 
 
 def check():
+    architecture = subprocess.check_output(["dpkg", "--print-architecture"], text=True).strip()
+    machine = {"arm64": b"\xb7\x00", "amd64": b"\x3e\x00"}[architecture]
     packages = ("indi-3rdparty-libs", "indi-3rdparty-drivers")
     paths = set()
     for package in packages:
@@ -52,7 +54,7 @@ def check():
             header = stream.read(20)
         if header[:4] != b"\x7fELF":
             continue
-        assert header[4:6] == b"\x02\x01" and header[18:20] == b"\xb7\x00", f"Non-ARM64 ELF: {path}"
+        assert header[4:6] == b"\x02\x01" and header[18:20] == machine, f"Non-{architecture} ELF: {path}"
         result = subprocess.run(["ldd", str(path)], text=True, capture_output=True)
         assert "not found" not in result.stdout + result.stderr, f"Missing dependency: {path}\n{result.stdout}{result.stderr}"
         if result.returncode:
@@ -70,7 +72,7 @@ def check():
         for node in root.iter("driver"):
             if node.text and node.text.strip():
                 assert Path("/usr/bin", node.text.strip()).is_file(), f"Uninstalled driver in {path}: {node.text}"
-    print(f"Validated {count} ARM64 ELF files, driver definitions, firmware and license notices")
+    print(f"Validated {count} {architecture} ELF files, driver definitions, firmware and license notices")
     # Exercise a real third-party driver without connecting to a mount.
     with tempfile.TemporaryFile(mode="w+") as log:
         server = subprocess.Popen(["indiserver", "-r", "0", "-p", "17624", "indi_eqmod_telescope"],

@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       publish:
-        description: Publish both tested suites to GitHub Pages
+        description: Publish all four tested suite/architecture targets to GitHub Pages
         type: boolean
         default: false
 
@@ -27,23 +27,30 @@ jobs:
       - run: python3 -m unittest discover -s tests -v
 
   build:
-    runs-on: ubuntu-24.04-arm
+    runs-on: ${{ matrix.target.runner }}
     timeout-minutes: 180
     strategy:
       fail-fast: false
       matrix:
         suite: [bookworm, trixie]
+        target:
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+          - arch: amd64
+            runner: ubuntu-24.04
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Prepare the matching Debian environment
         env:
           SUITE: ${{ matrix.suite }}
+          ARCHITECTURE: ${{ matrix.target.arch }}
         run: |
           docker build --build-arg SUITE="$SUITE" -f containers/Dockerfile -t "rpi-astro:$SUITE" .
           docker run --detach --name package-builder \
             -e DEB_BUILD_OPTIONS=parallel=4 \
             -v "$GITHUB_WORKSPACE:/workspace" \
             "rpi-astro:$SUITE" sleep infinity
+          test "$(docker exec package-builder dpkg --print-architecture)" = "$ARCHITECTURE"
       - name: Build libXISF
         env:
           SUITE: ${{ matrix.suite }}
@@ -80,8 +87,8 @@ jobs:
             "debian:$SUITE" bash /scripts/smoke-test.sh "$SUITE"
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: packages-${{ matrix.suite }}
-          path: dist/${{ matrix.suite }}/
+          name: packages-${{ matrix.suite }}-${{ matrix.target.arch }}
+          path: dist/${{ matrix.suite }}/${{ matrix.target.arch }}/
           if-no-files-found: error
           retention-days: 30
           compression-level: 0
@@ -104,12 +111,20 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
-          name: packages-bookworm
-          path: dist/bookworm
+          name: packages-bookworm-arm64
+          path: dist/bookworm/arm64
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
-          name: packages-trixie
-          path: dist/trixie
+          name: packages-trixie-arm64
+          path: dist/trixie/arm64
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: packages-bookworm-amd64
+          path: dist/bookworm/amd64
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: packages-trixie-amd64
+          path: dist/trixie/amd64
       - run: sudo apt-get update && sudo apt-get install -y reprepro gnupg
       - uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
         id: pages
@@ -136,3 +151,31 @@ jobs:
           path: site
       - uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1
         id: deployment
+
+  verify-published:
+    needs: publish
+    runs-on: ${{ matrix.target.runner }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        suite: [bookworm, trixie]
+        target:
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+          - arch: amd64
+            runner: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Verify public APT installation and matching sources
+        env:
+          SUITE: ${{ matrix.suite }}
+          ARCHITECTURE: ${{ matrix.target.arch }}
+          APT_SIGNING_FINGERPRINT: ${{ vars.APT_SIGNING_FINGERPRINT }}
+        run: |
+          test "$(docker run --rm "debian:$SUITE" dpkg --print-architecture)" = "$ARCHITECTURE"
+          docker run --rm \
+            -v "$GITHUB_WORKSPACE/scripts:/scripts:ro" \
+            -v "$GITHUB_WORKSPACE/sources.json:/sources.json:ro" \
+            "debian:$SUITE" bash /scripts/test-published.sh \
+            https://darkdragonsastro.github.io/rpi-astro "$APT_SIGNING_FINGERPRINT"

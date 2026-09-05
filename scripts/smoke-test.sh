@@ -1,12 +1,13 @@
 #!/usr/bin/env bash
-# Run in a fresh, native arm64 container of the corresponding Debian suite.
+# Run in a fresh, native arm64 or amd64 container of the corresponding Debian suite.
 set -euo pipefail
 export DEBIAN_FRONTEND=noninteractive
 suite=${1:?Usage: smoke-test.sh bookworm|trixie}
+architecture=$(dpkg --print-architecture)
 apt-get update
 # Start from distro packages to exercise an upgrade as well as dependency resolution.
 apt-get install -y --no-install-recommends indi-bin kstars indi-gphoto indi-eqmod python3
-apt-get install -y --no-install-recommends /packages/"$suite"/*.deb
+apt-get install -y --no-install-recommends /packages/"$suite"/"$architecture"/*.deb
 apt-get check
 dpkg-query -W indi-bin kstars libstellarsolver2 libxisf0
 dpkg-query -W indi-3rdparty indi-3rdparty-libs indi-3rdparty-drivers

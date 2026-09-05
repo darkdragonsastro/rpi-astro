@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build pinned sources in a disposable, native arm64 Debian container."""
+"""Build pinned sources in a disposable, native arm64 or amd64 Debian container."""
 
 import argparse
 import datetime
@@ -22,16 +22,16 @@ def run(*args, cwd=None, **kwargs):
 def build(suite, only=None):
     arch = subprocess.check_output(["dpkg", "--print-architecture"], text=True).strip()
     os_release = Path("/etc/os-release").read_text()
-    if arch != "arm64" or f"VERSION_CODENAME={suite}" not in os_release:
-        raise SystemExit(f"Run in a native arm64 Debian {suite} container")
+    if arch not in ("arm64", "amd64") or f"VERSION_CODENAME={suite}" not in os_release:
+        raise SystemExit(f"Run in a native arm64 or amd64 Debian {suite} container")
     manifest = json.loads((ROOT / "sources.json").read_text())
-    output = ROOT / "dist" / suite
+    output = ROOT / "dist" / suite / arch
     output.mkdir(parents=True, exist_ok=True)
     for package in manifest["packages"]:
         name, version = package["name"], package["version"]
         if only and name != only:
             continue
-        work = ROOT / "build" / suite / name
+        work = ROOT / "build" / suite / arch / name
         work.mkdir(parents=True, exist_ok=False)
         checkout = work / "checkout"
         run("git", "init", checkout)
@@ -87,19 +87,23 @@ def build(suite, only=None):
         date = datetime.datetime.fromtimestamp(int(timestamp), datetime.timezone.utc)
         (source / "debian" / "changelog").write_text(
             f"{name} ({deb_version}) {suite}; urgency=medium\n\n"
-            f"  * Build upstream revision {actual} for Raspberry Pi OS arm64.\n\n"
+            f"  * Build upstream revision {actual} for Debian and Raspberry Pi OS.\n\n"
             f" -- RPi Astro maintainers <maintainers@darkdragonsastro.org>  "
             f"{date.strftime('%a, %d %b %Y %H:%M:%S %z')}\n"
         )
         (source / "debian" / "rules").chmod(0o755)
         # Resolve Build-Depends against this suite, including earlier locally installed builds.
         run("apt-get", "build-dep", "-y", "--no-install-recommends", ".", cwd=source)
-        run("dpkg-buildpackage", "-us", "-uc", "-sa", cwd=source)
+        # One canonical source build per suite; packaging inputs are architecture-neutral.
+        run("dpkg-buildpackage", "-us", "-uc", "-sa" if arch == "arm64" else "-b", cwd=source)
         binaries = sorted(work.glob("*.deb"))
         if not binaries:
             raise SystemExit(f"No binary packages produced for {name}")
         run("apt-get", "install", "-y", "--no-install-recommends", *binaries)
-        for pattern in ("*.deb", "*.dsc", "*.orig.tar.*", "*.debian.tar.*", "*.buildinfo", "*.changes"):
+        patterns = ["*.deb", "*.buildinfo", "*.changes"]
+        if arch == "arm64":
+            patterns += ["*.dsc", "*.orig.tar.*", "*.debian.tar.*"]
+        for pattern in patterns:
             for artifact in work.glob(pattern):
                 shutil.copy2(artifact, output / artifact.name)
     shutil.copy2(ROOT / "sources.json", output / "sources.json")

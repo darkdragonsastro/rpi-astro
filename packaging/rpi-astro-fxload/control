@@ -8,7 +8,7 @@ Rules-Requires-Root: no
 Homepage: https://libusb.info
 
 Package: rpi-astro-fxload
-Architecture: arm64
+Architecture: arm64 amd64
 Depends: ${shlibs:Depends}, ${misc:Depends}
 Description: private FX2 and FX3 firmware loader for astronomy cameras
  The libusb example firmware loader, installed privately for RPi Astro

@@ -10,7 +10,9 @@ Third-party builds adapt the pinned upstream aggregate Debian control files with
 
 Versions have the form `3.8.4-1+rpiastro1~deb12` or `~deb13`. KStars retains Debian's epoch `5:` so APT can upgrade it. The suite suffix both distinguishes artifacts and allows a Bookworm-to-Trixie package upgrade. A manifest commit and build information make the source and environment traceable; the moving Debian package mirrors and base image tags mean bit-for-bit reproducibility is not yet guaranteed.
 
-The build container uses Debian's ARM64 userland, which Raspberry Pi OS 64-bit is based on. The 32-bit Raspberry Pi OS ABI is a separate target and cannot be added just by enabling Debian `armhf`.
+Builds use native Debian ARM64 or amd64 containers for each suite. Raspberry Pi OS 64-bit is based on Debian's ARM64 userland. The 32-bit Raspberry Pi OS ABI is a separate target and cannot be added just by enabling Debian `armhf`.
+
+Artifacts are isolated under `dist/<suite>/<architecture>`, with scratch trees under `build/<suite>/<architecture>`. ARM64 jobs produce canonical source packages (`dpkg-buildpackage -sa`); amd64 jobs use binary-only builds (`-b`) with identical source/packaging inputs and an architecture-neutral changelog. Publication requires matching manifests and native package names/versions across architectures. Both jobs build `Architecture: all` packages; publication compares their control and payload entries (including modes, ownership, symlinks and file contents, ignoring archive compression and timestamps) and publishes the ARM64 copy only if they agree. Sources and shared data are not duplicated per architecture.
 
 ## Signing key
 
@@ -33,7 +35,7 @@ gh variable set APT_SIGNING_FINGERPRINT --body FULL_FINGERPRINT \
   --repo darkdragonsastro/rpi-astro
 ```
 
-The private key has no passphrase because it must sign unattended; GitHub's secret store protects it at rest. Its only use is in the publication job, after both builds and tests pass. Protect `main`, review workflow changes, and restrict the `github-pages` environment to `main`. Configure environment reviewers if your release process needs human approval.
+The private key has no passphrase because it must sign unattended; GitHub's secret store protects it at rest. Its only use is in the publication job, after all four builds and tests pass. Protect `main`, review workflow changes, and restrict the `github-pages` environment to `main`. Configure environment reviewers if your release process needs human approval.
 
 Track the expiry date and rotate well in advance. Existing users trust the installed key, so a new key requires a transition signed by the old key or independently verified reconfiguration; silently replacing the website key is not sufficient.
 
@@ -41,7 +43,7 @@ APT Release metadata is signed with both `InRelease` and `Release.gpg`. This ini
 
 ## Publishing and rollback
 
-Only manually dispatched builds of `main` with `publish=true` can deploy. Both suites are assembled from artifacts belonging to that same run. A single deployment replaces the entire snapshot. The public site contains no private keys, reprepro databases, or configuration.
+Only manually dispatched builds of `main` with `publish=true` can deploy. Both suites and architectures are assembled from artifacts belonging to that same run. A single deployment replaces the entire snapshot. The public site contains no private keys, reprepro databases, or configuration. Post-deployment jobs verify the exact installer, package revisions, architecture selection, installed-file integrity, runtime checks and matching third-party source download in four fresh containers. A post-deployment failure is a release incident, not an automatic rollback.
 
 The current snapshot keeps one version per package per suite. Older package URLs can disappear at the next publication; clients should run `apt update` before installation. Actions artifacts expire after 30 days and are not a permanent release archive. Before promising long-term rollback support, add immutable GitHub Release assets and a retention policy; keep large optional astronomy data outside Pages.
 
@@ -51,4 +53,4 @@ To revert a bad release, fix/revert the source and packaging with a **higher Deb
 
 CI starts with Debian's `indi-bin`, `kstars`, `indi-eqmod` and `indi-gphoto`, upgrades to the built packages, checks dependencies and shared-library loading, runs `kstars --version` with an offscreen Qt backend, and queries an INDI simulator. Third-party tests check installed ELF architecture/dependencies, major driver coverage, XML executable references, firmware, udev rules and preserved notices. Repository tests exercise signatures and APT downloads independently.
 
-Still required for a production release: testing on actual Raspberry Pi OS installations of both suites, opening KStars/Ekos in a desktop session, and trying the supported hardware. Passing container checks does not certify camera SDK compatibility, USB/udev permissions, GPU rendering, or a complete imaging session.
+Still required for a production release: testing on actual Debian PCs and Raspberry Pi OS installations of both suites, opening KStars/Ekos in a desktop session, and trying the supported hardware. Passing container checks does not certify camera SDK compatibility, USB/udev permissions, GPU rendering, or a complete imaging session.

@@ -25,7 +25,7 @@ def prepare_packaging(source: Path, name: str):
                      lambda m: "Build-Depends: " + m[1].rstrip() + ",\n " + ",\n ".join(EXTRA_DEPENDS) + "\n", control, count=1)
     # Aggregate packages own common headers, firmware and rules, not coinstallable architectures.
     control = control.replace("Multi-Arch: same\n", "")
-    control = control.replace("Architecture: any", "Architecture: arm64")
+    control = control.replace("Architecture: any", "Architecture: arm64 amd64")
     if name.endswith("libs"):
         control = control.replace("Depends: ${shlibs:Depends}, ${misc:Depends}",
                                   "Depends: ${shlibs:Depends}, ${misc:Depends}, fxload, rpi-astro-fxload")

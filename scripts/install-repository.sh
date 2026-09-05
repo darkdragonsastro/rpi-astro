@@ -11,11 +11,13 @@ fi
 source /etc/os-release
 case "${VERSION_CODENAME:-}" in
   bookworm|trixie) suite=$VERSION_CODENAME ;;
-  *) echo "Only Raspberry Pi OS Bookworm and Trixie are supported." >&2; exit 1 ;;
+  *) echo "Only Debian or Raspberry Pi OS Bookworm and Trixie are supported." >&2; exit 1 ;;
 esac
-[[ $(dpkg --print-architecture) == arm64 ]] || {
-  echo "A 64-bit (arm64) OS is required." >&2; exit 1;
-}
+architecture=$(dpkg --print-architecture)
+case "$architecture" in
+  arm64|amd64) ;;
+  *) echo "A supported 64-bit OS (arm64 or amd64) is required." >&2; exit 1 ;;
+esac
 keyring=/etc/apt/keyrings/rpi-astro.asc
 sources=/etc/apt/sources.list.d/rpi-astro.sources
 if [[ -e $keyring || -e $sources ]]; then
@@ -34,7 +36,7 @@ actual=$(awk -F: '$1 == "fpr" {print $10; exit}' <<< "$key_details")
 [[ $actual == "$fingerprint" ]] || { echo "Signing key fingerprint mismatch." >&2; exit 1; }
 install -d -m 0755 /etc/apt/keyrings
 install -m 0644 "$temp_dir/key.asc" "$keyring"
-printf 'Types: deb deb-src\nURIs: %s\nSuites: %s\nComponents: main\nArchitectures: arm64\nSigned-By: %s\n' \
-  "$base_url" "$suite" "$keyring" > "$sources"
+printf 'Types: deb deb-src\nURIs: %s\nSuites: %s\nComponents: main\nArchitectures: %s\nSigned-By: %s\n' \
+  "$base_url" "$suite" "$architecture" "$keyring" > "$sources"
 apt-get update
 echo 'Repository added. Install with: sudo apt install indi-bin indi-3rdparty kstars'
