@@ -16,6 +16,13 @@
       "copyright": "debian/copyright"
     },
     {
+      "name": "rpi-astro-fxload",
+      "version": "1.0.26",
+      "url": "https://github.com/libusb/libusb.git",
+      "commit": "4239bc3a50014b8e6a5a2a59df1fff3b7469543b",
+      "copyright": "COPYING"
+    },
+    {
       "name": "indi-3rdparty-libs",
       "version": "2.2.4.1",
       "url": "https://github.com/indilib/indi-3rdparty.git",

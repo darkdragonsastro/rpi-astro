@@ -78,7 +78,8 @@ def build(suite, only=None):
         else:
             shutil.copytree(ROOT / "packaging" / name, source / "debian")
         shutil.copytree(ROOT / "packaging" / name, source / "debian", dirs_exist_ok=True)
-        (source / "debian" / "copyright").write_text(copyright_text)
+        if not (source / "debian" / "copyright").exists():
+            (source / "debian" / "copyright").write_text(copyright_text)
         (source / "debian" / "source").mkdir(exist_ok=True)
         (source / "debian" / "source" / "format").write_text("3.0 (quilt)\n")
         epoch = f"{package['epoch']}:" if package.get("epoch") else ""

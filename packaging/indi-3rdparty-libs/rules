@@ -8,6 +8,9 @@ override_dh_auto_configure:
 	dh_auto_configure -- -DCMAKE_BUILD_TYPE=RelWithDebInfo -DBUILD_LIBS=ON -DUDEVRULES_INSTALL_DIR=/usr/lib/udev/rules.d -DWITH_AHP_XC=OFF -DWITH_AHP_GT=OFF
 override_dh_auto_test:
 	# Hardware-dependent upstream tests are covered separately by runtime smoke checks.
+override_dh_auto_install:
+	dh_auto_install
+	python3 debian/fix-udev.py
 override_dh_dwz:
 	# Vendor binaries may use unsupported or already stripped debug formats.
 override_dh_strip:

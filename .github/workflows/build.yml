@@ -59,7 +59,9 @@ jobs:
       - name: Build INDI third-party libraries and vendor SDK packages
         env:
           SUITE: ${{ matrix.suite }}
-        run: docker exec package-builder python3 scripts/build.py "$SUITE" --only indi-3rdparty-libs
+        run: |
+          docker exec package-builder python3 scripts/build.py "$SUITE" --only rpi-astro-fxload
+          docker exec package-builder python3 scripts/build.py "$SUITE" --only indi-3rdparty-libs
       - name: Build INDI third-party drivers
         env:
           SUITE: ${{ matrix.suite }}

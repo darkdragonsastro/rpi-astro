@@ -1,0 +1,46 @@
+Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Upstream-Name: libusb fxload example
+Source: https://github.com/libusb/libusb
+
+Files: *
+Copyright: libusb contributors (see file headers in the corresponding source)
+License: LGPL-2.1+
+ The remaining libusb source is not compiled into this package. It retains
+ its upstream notices and COPYING license. The full license is also in
+ /usr/share/common-licenses/LGPL-2.1.
+
+Files: examples/fxload.c examples/ezusb.c examples/ezusb.h
+Copyright: 2001 Stephen Williams
+           2001-2002 David Brownell
+           2008 Roger Williams
+           2012 Pete Batard
+           2013 Federico Manzan
+License: GPL-2+
+ This program is free software; you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation; either version 2 of the License, or
+ (at your option) any later version.
+ .
+ This program is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU General Public License for more details.
+ .
+ The full license is in /usr/share/common-licenses/GPL-2.
+
+Files: debian/*
+Copyright: 2026 RPi Astro contributors
+License: MIT
+ Permission is hereby granted, free of charge, to any person obtaining a
+ copy of this software and associated documentation files, to deal in the
+ Software without restriction, including without limitation the rights to
+ use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
+ of the Software, subject to preserving this copyright and permission notice.
+ .
+ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ THE SOFTWARE.

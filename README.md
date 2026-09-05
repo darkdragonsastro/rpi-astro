@@ -38,6 +38,8 @@ For an existing repository installation, run `sudo apt update && sudo apt instal
 
 Third-party coverage follows the upstream default build, plus Webcam and NUT support. Upstream-default-off options (including AHP, GigE, libcamera, IMU and Celestron Origin) are not enabled. On ARM64, Pentax uses the upstream pktriggercord backend; the Ricoh SDK has no ARM64 binary. Pentax raw-I/O capabilities are not automatically granted. Vendor and component license notices are installed under `/usr/share/doc/indi-3rdparty-{libs,drivers}/upstream-notices/`.
 
+QHY FX3 firmware loading uses a private `rpi-astro-fxload` helper built from pinned libusb examples; legacy SBIG/DSI rules use Debian's `fxload`. The pinned upstream release omits `QHY492.img`, so QHY492 firmware loading is not provided. ASI's optional power-driver rules that grant global USB sysfs write access are omitted; vendor-specific camera permissions remain. Reconnect USB equipment after installation so udev applies the new rules.
+
 Use the suite matching your installed OS. Do not point Bookworm at Trixie packages. A 64-bit CPU running a 32-bit OS is not supported. Builds target generic ARM64 and do not use `-march=native`.
 
 KStars is a graphical application and requires a desktop session. INDI can run headlessly, for example:

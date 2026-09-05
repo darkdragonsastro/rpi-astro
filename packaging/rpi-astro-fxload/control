@@ -1,0 +1,15 @@
+Source: rpi-astro-fxload
+Section: admin
+Priority: optional
+Maintainer: RPi Astro maintainers <maintainers@darkdragonsastro.org>
+Build-Depends: debhelper-compat (= 13), pkg-config, libusb-1.0-0-dev
+Standards-Version: 4.6.2
+Rules-Requires-Root: no
+Homepage: https://libusb.info
+
+Package: rpi-astro-fxload
+Architecture: arm64
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: private FX2 and FX3 firmware loader for astronomy cameras
+ The libusb example firmware loader, installed privately for RPi Astro
+ camera udev rules. Does not replace the system fxload executable.

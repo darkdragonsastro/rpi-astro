@@ -6,6 +6,8 @@
 
 Third-party builds adapt the pinned upstream aggregate Debian control files with `scripts/thirdparty.py`; local rules are in `packaging/indi-3rdparty-*`. Two source packages build the same pinned upstream tree, libraries first. All upstream per-component Debian copyright files and in-tree license/notice files are preserved in both binary documentation trees. Their source archives also retain the original vendor binaries; supplying source packages does not imply proprietary SDK source code is available. Keep the Pages size gate enabled as SDKs grow.
 
+`rpi-astro-fxload` compiles only the FX2/FX3 loader from libusb 1.0.26 against each suite's system libusb. It installs privately under `/usr/lib/rpi-astro/`, avoiding replacement of Debian's legacy loader. QHY udev rules use its bus/address syntax. The library packaging also omits the rule for absent upstream QHY492 firmware and removes ASI global USB sysfs permission changes for the unbuilt optional power driver.
+
 Versions have the form `3.8.4-1+rpiastro1~deb12` or `~deb13`. KStars retains Debian's epoch `5:` so APT can upgrade it. The suite suffix both distinguishes artifacts and allows a Bookworm-to-Trixie package upgrade. A manifest commit and build information make the source and environment traceable; the moving Debian package mirrors and base image tags mean bit-for-bit reproducibility is not yet guaranteed.
 
 The build container uses Debian's ARM64 userland, which Raspberry Pi OS 64-bit is based on. The 32-bit Raspberry Pi OS ABI is a separate target and cannot be added just by enabling Debian `armhf`.

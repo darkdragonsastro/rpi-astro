@@ -3,6 +3,7 @@
 
 from pathlib import Path
 import os
+import re
 import signal
 import subprocess
 import tempfile
@@ -30,6 +31,18 @@ def check():
     for rule in ("99-asi.rules", "85-qhyccd.rules"):
         assert Path("/usr/lib/udev/rules.d", rule).is_file(), f"Missing {rule}"
     assert any(Path("/usr/lib/firmware/qhy").iterdir()), "Missing QHY firmware"
+    assert Path("/sbin/fxload").is_file(), "Missing legacy firmware loader"
+    loader = Path("/usr/lib/rpi-astro/fxload")
+    help_result = subprocess.run([str(loader), "-h"], text=True, capture_output=True, timeout=5)
+    assert "fx3" in help_result.stderr, "Missing FX3 firmware-loader support"
+    qhy_rules = Path("/usr/lib/udev/rules.d/85-qhyccd.rules").read_text()
+    assert str(loader) in qhy_rules and "-D $env{DEVNAME}" not in qhy_rules
+    for line in qhy_rules.splitlines():
+        if not line.lstrip().startswith("#"):
+            for firmware in re.findall(r'(?:-I|-s) ([^\s"]+)', line):
+                assert Path(firmware).is_file(), f"Missing referenced firmware: {firmware}"
+    asi_rules = Path("/usr/lib/udev/rules.d/99-asi.rules").read_text()
+    assert "/sys/bus/usb/drivers/usb/bind" not in asi_rules, "Global USB permission override"
     count = 0
     for value in sorted(paths):
         path = Path(value)

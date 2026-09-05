@@ -1,0 +1,17 @@
+#!/usr/bin/make -f
+export DEB_BUILD_MAINT_OPTIONS = hardening=+all
+include /usr/share/dpkg/default.mk
+%:
+	dh $@ --buildsystem=makefile
+override_dh_auto_configure:
+	# Build only the standalone loader against the distro libusb ABI.
+override_dh_auto_build:
+	$(CC) $(CPPFLAGS) $(CFLAGS) -Idebian $(shell pkg-config --cflags libusb-1.0) -DFXLOAD_VERSION='"1.0.26 (RPi Astro)"' examples/fxload.c examples/ezusb.c $(LDFLAGS) $(shell pkg-config --libs libusb-1.0) -o debian/fxload
+override_dh_auto_test:
+	debian/fxload -V
+override_dh_auto_install:
+	install -D -m 0755 debian/fxload debian/rpi-astro-fxload/usr/lib/rpi-astro/fxload
+override_dh_auto_clean:
+	dh_clean debian/fxload
+override_dh_strip:
+	dh_strip --no-automatic-dbgsym

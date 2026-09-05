@@ -26,12 +26,15 @@ def prepare_packaging(source: Path, name: str):
     # Aggregate packages own common headers, firmware and rules, not coinstallable architectures.
     control = control.replace("Multi-Arch: same\n", "")
     control = control.replace("Architecture: any", "Architecture: arm64")
+    if name.endswith("libs"):
+        control = control.replace("Depends: ${shlibs:Depends}, ${misc:Depends}",
+                                  "Depends: ${shlibs:Depends}, ${misc:Depends}, fxload, rpi-astro-fxload")
     if name.endswith("drivers"):
         control = control.replace("Depends: ${shlibs:Depends}, ${misc:Depends}, indi-3rdparty-libs",
                                   "Depends: ${shlibs:Depends}, ${misc:Depends}, indi-bin, indi-3rdparty-libs (= ${binary:Version})")
         control += "\n\nPackage: indi-3rdparty\nArchitecture: all\nDepends: ${misc:Depends}, indi-3rdparty-drivers (= ${source:Version})\nDescription: complete default INDI third-party driver collection\n Installs the third-party drivers and their vendor support libraries.\n"
     # Supplement upstream's aggregate conflict list for other distro package names.
-    extras = ("libapogee3v5, libqsi9, libqsi9t64, asi-common" if name.endswith("libs")
+    extras = ("libapogee3v5, libqsi9, libqsi9t64, asi-common, firmware-ccd" if name.endswith("libs")
               else "indi-atik-efw, libusbp1, libusbp-dev, libpololu-tic-1, libpololu-tic-dev, pololu-tic")
     for field in ("conflicts", "replaces"):
         control = re.sub(rf"(?mi)^{field}: (.*)$", lambda m: f"{field.title()}: {m[1]}, {extras}", control)
