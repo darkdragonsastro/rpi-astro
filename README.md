@@ -8,10 +8,11 @@ The initial repository is live. Both suites pass ARM64 build, distro-upgrade and
 | --- | --- | --- |
 | [libXISF](https://gitea.nouspiro.space/nou/libXISF) | 0.2.13 | `libxisf0`, `libxisf-dev` |
 | [INDI](https://github.com/indilib/indi) | 2.2.4.2 | `indi-bin`, shared libraries, `libindi-dev`, `libindi-data` |
+| [INDI third-party](https://github.com/indilib/indi-3rdparty) | 2.2.4.1 | `indi-3rdparty`, `indi-3rdparty-drivers`, `indi-3rdparty-libs` |
 | [StellarSolver](https://github.com/rlancaste/stellarsolver) | 2.8 | `libstellarsolver2`, `libstellarsolver-dev` |
 | [KStars / Ekos](https://kstars.kde.org/) | 3.8.4 | `kstars`, `kstars-data` |
 
-Exact revisions and the package revision are in [sources.json](sources.json). These are newer upstream builds, not a mirror of Debian's packages. Qt 5 is used consistently for KStars and StellarSolver on both releases. INDI core includes many telescope drivers and simulated devices; the separate `indi-3rdparty` collection, vendor SDKs, PHD2 and large plate-solving index files are not included in the initial set.
+Exact revisions and the package revision are in [sources.json](sources.json). These are newer upstream builds, not a mirror of Debian's packages. Qt 5 is used consistently for KStars and StellarSolver on both releases. INDI core includes many telescope drivers and simulated devices. Third-party packaging adds upstream's default-enabled ARM64 drivers and supplied vendor libraries, firmware and udev rules. PHD2 and large plate-solving index files are not included.
 
 ## Install
 
@@ -28,10 +29,14 @@ Download and inspect the setup script, then run it:
 curl -fLO https://darkdragonsastro.github.io/rpi-astro/install-repository.sh
 less install-repository.sh
 sudo bash install-repository.sh
-sudo apt install indi-bin kstars
+sudo apt install indi-bin indi-3rdparty kstars
 ```
 
 The script checks the OS suite, ARM64 architecture and signing-key fingerprint, then creates a deb822 `.sources` file with a repository-specific `Signed-By` key. It enables `deb-src` too, so `apt source kstars` retrieves matching source and packaging. Compare the script's fingerprint with the independently recorded maintainer fingerprint before first use. It refuses to overwrite an existing repository configuration.
+
+For an existing repository installation, run `sudo apt update && sudo apt install indi-3rdparty`. This installs both aggregate third-party packages. They replace conflicting individually packaged drivers/libraries (such as `indi-eqmod` and `indi-gphoto`); review APT's proposed changes if you have packages from another astronomy repository.
+
+Third-party coverage follows the upstream default build, plus Webcam and NUT support. Upstream-default-off options (including AHP, GigE, libcamera, IMU and Celestron Origin) are not enabled. On ARM64, Pentax uses the upstream pktriggercord backend; the Ricoh SDK has no ARM64 binary. Pentax raw-I/O capabilities are not automatically granted. Vendor and component license notices are installed under `/usr/share/doc/indi-3rdparty-{libs,drivers}/upstream-notices/`.
 
 Use the suite matching your installed OS. Do not point Bookworm at Trixie packages. A 64-bit CPU running a 32-bit OS is not supported. Builds target generic ARM64 and do not use `-march=native`.
 
@@ -68,7 +73,7 @@ docker run --rm -e DEB_BUILD_OPTIONS=parallel=4 \
   -v "$PWD:/workspace" rpi-astro:bookworm python3 scripts/build.py bookworm
 ```
 
-Substitute `trixie` to build that suite. Build directories are deliberately required to be fresh: move `build/<suite>` and `dist/<suite>` aside before retrying a whole build. `--only libxisf|indi|stellarsolver|kstars` supports development, but prerequisites must already be installed in the same disposable container. Publication always requires the complete suite set.
+Substitute `trixie` to build that suite. Build directories are deliberately required to be fresh: move `build/<suite>` and `dist/<suite>` aside before retrying a whole build. `--only` accepts a source package name from `sources.json`, including `indi-3rdparty-libs` and `indi-3rdparty-drivers`; prerequisites must already be installed in the same disposable container. Publication always requires the complete suite set.
 
 Run repository integration tests on Debian/Ubuntu with `python3`, `reprepro`, `gnupg` and `dpkg-dev` installed:
 

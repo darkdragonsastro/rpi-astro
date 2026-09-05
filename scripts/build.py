@@ -8,6 +8,7 @@ import os
 from pathlib import Path
 import shutil
 import subprocess
+from thirdparty import prepare_packaging
 
 ROOT = Path(__file__).resolve().parents[1]
 SUITES = {"bookworm": 12, "trixie": 13}
@@ -45,15 +46,38 @@ def build(suite, only=None):
         ).strip()
         os.environ["SOURCE_DATE_EPOCH"] = timestamp
         source = work / f"{name}-{version}"
-        archive = work / f"{name}_{version}.orig.tar.gz"
-        run("git", "-C", checkout, "archive", "--format=tar.gz",
-            f"--prefix={source.name}/", f"--output={archive}", "FETCH_HEAD")
-        run("tar", "-xzf", archive, "-C", work)
+        if package.get("upstream_packaging"):
+            # Large SDK trees compress much better with xz, keeping Pages below its cap.
+            archive = work / f"{name}_{version}.orig.tar.xz"
+            with archive.open("wb") as stream:
+                producer = subprocess.Popen(
+                    ["git", "-C", str(checkout), "archive", "--format=tar", f"--prefix={source.name}/", "FETCH_HEAD"],
+                    stdout=subprocess.PIPE,
+                )
+                try:
+                    run("xz", "-T2", "-6", "--stdout", stdin=producer.stdout, stdout=stream)
+                finally:
+                    producer.stdout.close()
+                    status = producer.wait()
+                if status:
+                    raise subprocess.CalledProcessError(status, producer.args)
+        else:
+            archive = work / f"{name}_{version}.orig.tar.gz"
+            run("git", "-C", checkout, "archive", "--format=tar.gz",
+                f"--prefix={source.name}/", f"--output={archive}", "FETCH_HEAD")
+        run("tar", "-xf", archive, "-C", work)
         copyright_text = (source / package["copyright"]).read_text()
+        if package.get("upstream_packaging"):
+            prepare_packaging(source, name)
+            copyright_text = (source / "rpiastro-packaging" / "copyright").read_text()
         # This tree has just been extracted from the pinned archive, never a user's checkout.
         if (source / "debian").exists():
             shutil.rmtree(source / "debian")
-        shutil.copytree(ROOT / "packaging" / name, source / "debian")
+        if package.get("upstream_packaging"):
+            shutil.move(source / "rpiastro-packaging", source / "debian")
+        else:
+            shutil.copytree(ROOT / "packaging" / name, source / "debian")
+        shutil.copytree(ROOT / "packaging" / name, source / "debian", dirs_exist_ok=True)
         (source / "debian" / "copyright").write_text(copyright_text)
         (source / "debian" / "source").mkdir(exist_ok=True)
         (source / "debian" / "source" / "format").write_text("3.0 (quilt)\n")
@@ -83,6 +107,6 @@ def build(suite, only=None):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("suite", choices=SUITES)
-    parser.add_argument("--only", choices=["libxisf", "indi", "stellarsolver", "kstars"])
+    parser.add_argument("--only", choices=[p["name"] for p in json.loads((ROOT / "sources.json").read_text())["packages"]])
     args = parser.parse_args()
     build(args.suite, args.only)

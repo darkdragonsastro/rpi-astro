@@ -75,13 +75,14 @@ def publish(packages, output, fingerprint, base_url, max_bytes=900_000_000):
         '<meta name="viewport" content="width=device-width, initial-scale=1">'
         '<title>RPi Astro APT repository</title><body>'
         '<h1>RPi Astro</h1><p>Astronomy packages for 64-bit Raspberry Pi OS.</p>'
-        '<p>Supports Bookworm and Trixie. INDI core, KStars/Ekos, StellarSolver and libXISF.</p>'
+        '<p>Supports Bookworm and Trixie. INDI core and third-party drivers, KStars/Ekos, StellarSolver and libXISF.</p>'
         '<p>Download and inspect <a href="install-repository.sh">the repository setup script</a>, '
-        'then run it with sudo. Install with <code>sudo apt install indi-bin kstars</code>.</p>'
+        'then run it with sudo. Install with <code>sudo apt install indi-bin indi-3rdparty kstars</code>.</p>'
         f'<p>Signing key: <code>{fingerprint.upper()}</code> '
         '<a href="rpi-astro.asc">Public key</a></p>'
         '<p>Source packages are available with <code>apt source</code>. '
-        'Third-party vendor SDK drivers and large plate-solving index sets are not included.</p>'
+        'Third-party packages include upstream default-enabled ARM64 drivers and vendor libraries. '
+        'Optional default-off drivers and large plate-solving index sets are not included.</p>'
         f'{rows}</body></html>\n'
     )
     size = sum(p.stat().st_size for p in output.rglob("*") if p.is_file())

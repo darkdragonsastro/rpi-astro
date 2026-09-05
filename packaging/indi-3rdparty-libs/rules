@@ -1,0 +1,16 @@
+#!/usr/bin/make -f
+export DEB_BUILD_MAINT_OPTIONS = hardening=+all
+export DEB_CFLAGS_MAINT_APPEND = -fno-strict-aliasing -fPIC
+export DEB_CXXFLAGS_MAINT_APPEND = -fno-strict-aliasing -fPIC
+%:
+	dh $@ --buildsystem=cmake+ninja
+override_dh_auto_configure:
+	dh_auto_configure -- -DCMAKE_BUILD_TYPE=RelWithDebInfo -DBUILD_LIBS=ON -DUDEVRULES_INSTALL_DIR=/usr/lib/udev/rules.d -DWITH_AHP_XC=OFF -DWITH_AHP_GT=OFF
+override_dh_auto_test:
+	# Hardware-dependent upstream tests are covered separately by runtime smoke checks.
+override_dh_dwz:
+	# Vendor binaries may use unsupported or already stripped debug formats.
+override_dh_strip:
+	dh_strip --no-automatic-dbgsym
+override_dh_compress:
+	dh_compress -Xupstream-notices

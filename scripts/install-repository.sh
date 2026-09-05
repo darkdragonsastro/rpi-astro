@@ -37,4 +37,4 @@ install -m 0644 "$temp_dir/key.asc" "$keyring"
 printf 'Types: deb deb-src\nURIs: %s\nSuites: %s\nComponents: main\nArchitectures: arm64\nSigned-By: %s\n' \
   "$base_url" "$suite" "$keyring" > "$sources"
 apt-get update
-echo 'Repository added. Install with: sudo apt install indi-bin kstars'
+echo 'Repository added. Install with: sudo apt install indi-bin indi-3rdparty kstars'

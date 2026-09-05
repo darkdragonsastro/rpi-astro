@@ -56,6 +56,14 @@ jobs:
         env:
           SUITE: ${{ matrix.suite }}
         run: docker exec package-builder python3 scripts/build.py "$SUITE" --only stellarsolver
+      - name: Build INDI third-party libraries and vendor SDK packages
+        env:
+          SUITE: ${{ matrix.suite }}
+        run: docker exec package-builder python3 scripts/build.py "$SUITE" --only indi-3rdparty-libs
+      - name: Build INDI third-party drivers
+        env:
+          SUITE: ${{ matrix.suite }}
+        run: docker exec package-builder python3 scripts/build.py "$SUITE" --only indi-3rdparty-drivers
       - name: Build KStars and Ekos
         env:
           SUITE: ${{ matrix.suite }}

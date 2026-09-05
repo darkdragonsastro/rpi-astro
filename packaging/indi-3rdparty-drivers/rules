@@ -1,0 +1,18 @@
+#!/usr/bin/make -f
+export DEB_BUILD_MAINT_OPTIONS = hardening=+all
+export DEB_CFLAGS_MAINT_APPEND = -fno-strict-aliasing -fPIC
+export DEB_CXXFLAGS_MAINT_APPEND = -fno-strict-aliasing -fPIC
+%:
+	dh $@ --buildsystem=cmake+ninja
+override_dh_auto_configure:
+	dh_auto_configure -- -DCMAKE_BUILD_TYPE=RelWithDebInfo -DBUILD_LIBS=OFF -DUDEVRULES_INSTALL_DIR=/usr/lib/udev/rules.d -DWITH_AHP_XC=OFF -DWITH_AHP_GT=OFF -DWITH_WEBCAM=ON -DWITH_NUT=ON -DENABLE_GUI=OFF -DSKIP_SETCAP=ON
+override_dh_auto_install:
+	dh_auto_install --destdir=debian/indi-3rdparty-drivers
+override_dh_auto_test:
+	# No attached astronomy hardware in the builder; use scripts/smoke-test.sh.
+override_dh_dwz:
+	# Match upstream aggregate packaging.
+override_dh_strip:
+	dh_strip --no-automatic-dbgsym
+override_dh_compress:
+	dh_compress -Xupstream-notices

@@ -1,5 +1,5 @@
 {
-  "revision": 1,
+  "revision": 2,
   "packages": [
     {
       "name": "libxisf",
@@ -14,6 +14,22 @@
       "url": "https://github.com/indilib/indi.git",
       "commit": "3371faeb07f8fa24bae3edfb44a181853a8e9ce7",
       "copyright": "debian/copyright"
+    },
+    {
+      "name": "indi-3rdparty-libs",
+      "version": "2.2.4.1",
+      "url": "https://github.com/indilib/indi-3rdparty.git",
+      "commit": "28607cc2ad5283f9db1917bcbc6069988745888d",
+      "copyright": "LICENSE",
+      "upstream_packaging": true
+    },
+    {
+      "name": "indi-3rdparty-drivers",
+      "version": "2.2.4.1",
+      "url": "https://github.com/indilib/indi-3rdparty.git",
+      "commit": "28607cc2ad5283f9db1917bcbc6069988745888d",
+      "copyright": "LICENSE",
+      "upstream_packaging": true
     },
     {
       "name": "stellarsolver",
