@@ -1,0 +1,2 @@
+# Internal static library is already linked into KStars; no public development package.
+usr/lib/*/libhtmesh.a
