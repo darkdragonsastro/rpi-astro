@@ -1,5 +1,5 @@
 {
-  "revision": 3,
+  "revision": 4,
   "packages": [
     {
       "name": "libxisf",
@@ -28,7 +28,28 @@
       "url": "https://github.com/indilib/indi-3rdparty.git",
       "commit": "28607cc2ad5283f9db1917bcbc6069988745888d",
       "copyright": "LICENSE",
-      "upstream_packaging": true
+      "upstream_packaging": true,
+      "components": [
+        {
+          "name": "qhybookworm",
+          "version": "26.2.1",
+          "commit": "f802458a9596a07c8f84d25bca369d4f9d783142",
+          "reason": "QHY SDK compatibility for Bookworm amd64 only",
+          "paths": [
+            "LICENSE",
+            "debian/libqhy/copyright",
+            "cmake_modules",
+            "libqhy/CMakeLists.txt",
+            "libqhy/85-qhyccd.rules",
+            "libqhy/qhyccd.h",
+            "libqhy/qhyccdcamdef.h",
+            "libqhy/qhyccderr.h",
+            "libqhy/qhyccdstruct.h",
+            "libqhy/firmware",
+            "libqhy/x64"
+          ]
+        }
+      ]
     },
     {
       "name": "indi-3rdparty-drivers",

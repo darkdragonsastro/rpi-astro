@@ -14,6 +14,8 @@ Builds use native Debian ARM64 or amd64 containers for each suite. Raspberry Pi 
 
 Artifacts are isolated under `dist/<suite>/<architecture>`, with scratch trees under `build/<suite>/<architecture>`. ARM64 jobs produce canonical source packages (`dpkg-buildpackage -sa`); amd64 jobs use binary-only builds (`-b`) with identical source/packaging inputs and an architecture-neutral changelog. Publication requires matching manifests and native package names/versions across architectures. Both jobs build `Architecture: all` packages; publication compares their control and payload entries (including modes, ownership, symlinks and file contents, ignoring archive compression and timestamps) and publishes the ARM64 copy only if they agree. Sources and shared data are not duplicated per architecture.
 
+QHY is the explicit SDK compatibility exception: Bookworm amd64 selects 26.2.1, while the other targets use the primary tree's 26.7.21. The `indi-3rdparty-libs` manifest entry pins a `qhybookworm` supplementary orig component (selected upstream SDK, headers, firmware, CMake files and notices). This component is present in source packages for both suites; `debian/rules` enables it only for `bookworm/amd64`. It uses no build-time unpinned download. Runtime tests query `GetQHYCCDSDKVersion`, and the binary package includes the component provenance and notices. Review this exception deliberately during upstream updates; a newer SDK is not necessarily compatible with Bookworm.
+
 ## Signing key
 
 Use a dedicated repository key. Generate it in a private working directory, back up the key and revocation certificate offline, and export only the public key to the website. A sample manual setup is:

@@ -17,7 +17,7 @@ class ThirdPartyPackagingTests(unittest.TestCase):
             rules = Path(folder) / "debian/indi-3rdparty-libs/usr/lib/udev/rules.d"
             rules.mkdir(parents=True)
             (rules / "85-qhyccd.rules").write_text(
-                'RUN+="/sbin/fxload -t fx3 -I /usr/lib/firmware/qhy/QHY268.img -D $env{DEVNAME}"\n'
+                'RUN+="/sbin/fxload -t fx3 -I /lib/firmware/qhy/QHY268.img -D $env{DEVNAME}"\n'
                 'RUN+="/sbin/fxload -t fx3 -I /usr/lib/firmware/qhy/QHY492.img -D $env{DEVNAME}"\n')
             (rules / "99-asi.rules").write_text(
                 'ATTR{idVendor}=="03c3", MODE="0666"\n'
@@ -32,6 +32,7 @@ class ThirdPartyPackagingTests(unittest.TestCase):
             qhy = (rules / "85-qhyccd.rules").read_text()
             self.assertIn('/usr/lib/rpi-astro/fxload', qhy)
             self.assertIn('-p $env{BUSNUM},$env{DEVNUM}', qhy)
+            self.assertIn('-I /usr/lib/firmware/qhy/QHY268.img', qhy)
             self.assertNotIn('QHY492.img', qhy)
             asi = (rules / "99-asi.rules").read_text()
             self.assertNotIn('unsafe global rule', asi)

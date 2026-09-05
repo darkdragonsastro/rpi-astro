@@ -2,6 +2,7 @@
 """Validate installed third-party payloads without connecting physical devices."""
 
 from pathlib import Path
+import ctypes
 import os
 import re
 import signal
@@ -14,6 +15,16 @@ import xml.etree.ElementTree as ET
 def check():
     architecture = subprocess.check_output(["dpkg", "--print-architecture"], text=True).strip()
     machine = {"arm64": b"\xb7\x00", "amd64": b"\x3e\x00"}[architecture]
+    bookworm = "VERSION_CODENAME=bookworm" in Path("/etc/os-release").read_text()
+    expected_qhy = (26, 2, 1) if bookworm and architecture == "amd64" else (26, 7, 21)
+    qhy = ctypes.CDLL("libqhyccd.so.20")
+    version = [ctypes.c_uint32() for _ in range(4)]
+    qhy.GetQHYCCDSDKVersion.argtypes = [ctypes.POINTER(ctypes.c_uint32)] * 4
+    qhy.GetQHYCCDSDKVersion.restype = ctypes.c_uint32
+    result = qhy.GetQHYCCDSDKVersion(*(ctypes.byref(part) for part in version))
+    actual_qhy = tuple(part.value for part in version[:3])
+    assert result == 0 and actual_qhy == expected_qhy, f"Unexpected QHY SDK: {actual_qhy}"
+    print(f"QHY SDK {actual_qhy} verified from the loaded library")
     packages = ("indi-3rdparty-libs", "indi-3rdparty-drivers")
     paths = set()
     for package in packages:
@@ -21,6 +32,8 @@ def check():
         notices = Path("/usr/share/doc") / package / "upstream-notices"
         assert (notices / "INDEX").is_file(), f"Missing notices for {package}"
         assert (notices / "libasi/license.txt").is_file(), "Missing vendor redistribution notice"
+        if package.endswith("libs"):
+            assert (notices / "qhybookworm/debian/libqhy/copyright").is_file(), "Missing fallback SDK notice"
     assert not any("NOTFOUND" in path for path in paths), "Unresolved CMake installation directory"
     # Make a silently disabled major driver or missing SDK a test failure.
     required = ["indi_asi_ccd", "indi_qhy_ccd", "indi_atik_ccd", "indi_playerone_ccd",

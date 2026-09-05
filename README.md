@@ -48,6 +48,8 @@ Third-party coverage follows the upstream default build, plus Webcam and NUT sup
 
 QHY FX3 firmware loading uses a private `rpi-astro-fxload` helper built from pinned libusb examples; legacy SBIG/DSI rules use Debian's `fxload`. The pinned upstream release omits `QHY492.img`, so QHY492 firmware loading is not provided. ASI's optional power-driver rules that grant global USB sysfs write access are omitted; vendor-specific camera permissions remain. Reconnect USB equipment after installation so udev applies the new rules.
 
+**Bookworm amd64 compatibility exception:** QHY uses SDK **26.2.1**, with its matching headers and firmware, because the current x64 SDK requires newer glibc/C++ runtime libraries than Bookworm provides. The other three targets retain QHY **26.7.21**. The fallback is pinned in `sources.json`, included as a supplementary Debian source archive, and checked by querying the installed SDK version. Newer QHY models or fixes may therefore require Trixie on an Intel/AMD PC.
+
 Use the suite matching your installed OS. Do not point Bookworm at Trixie packages. A 64-bit CPU running a 32-bit OS is not supported. Our build flags do not use `-march=native`; vendor SDK hardware requirements still apply. Ubuntu and other Debian derivatives are not tested targets.
 
 KStars is a graphical application and requires a desktop session. INDI can run headlessly, for example:

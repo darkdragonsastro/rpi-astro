@@ -9,7 +9,8 @@ assert "/sbin/fxload" in text and "-D $env{DEVNAME}" in text
 # Do not run a guaranteed-failing upload; keep the general QHY permission rules.
 text = "\n".join(line for line in text.splitlines() if "QHY492.img" not in line) + "\n"
 qhy.write_text(text.replace("/sbin/fxload", "/usr/lib/rpi-astro/fxload")
-              .replace("-D $env{DEVNAME}", "-p $env{BUSNUM},$env{DEVNUM}"))
+              .replace("-D $env{DEVNAME}", "-p $env{BUSNUM},$env{DEVNUM}")
+              .replace(" /lib/firmware/qhy/", " /usr/lib/firmware/qhy/"))
 asi = rules / "99-asi.rules"
 text = asi.read_text()
 start = text.index("# Set permissions for USB bind/unbind operations")

@@ -19,6 +19,31 @@ def run(*args, cwd=None, **kwargs):
     return subprocess.run(list(map(str, args)), cwd=cwd, check=True, **kwargs)
 
 
+def add_components(package, checkout, work, source):
+    """Create pinned supplementary orig archives alongside the main source archive."""
+    for component in package.get("components", []):
+        run("git", "-C", checkout, "fetch", "--depth=1", package["url"], component["commit"])
+        fetched = subprocess.check_output(
+            ["git", "-C", str(checkout), "rev-parse", "FETCH_HEAD"], text=True
+        ).strip()
+        if fetched != component["commit"]:
+            raise SystemExit(f"Unexpected source revision for {component['name']}")
+        supplement = work / f"{package['name']}_{package['version']}.orig-{component['name']}.tar.xz"
+        with supplement.open("wb") as stream:
+            producer = subprocess.Popen(
+                ["git", "-C", str(checkout), "archive", "--format=tar",
+                 f"--prefix={component['name']}/", fetched, *component["paths"]], stdout=subprocess.PIPE,
+            )
+            try:
+                run("xz", "-T2", "-6", "--stdout", stdin=producer.stdout, stdout=stream)
+            finally:
+                producer.stdout.close()
+                status = producer.wait()
+            if status:
+                raise subprocess.CalledProcessError(status, producer.args)
+        run("tar", "-xf", supplement, "-C", source)
+
+
 def build(suite, only=None):
     arch = subprocess.check_output(["dpkg", "--print-architecture"], text=True).strip()
     os_release = Path("/etc/os-release").read_text()
@@ -66,6 +91,9 @@ def build(suite, only=None):
             run("git", "-C", checkout, "archive", "--format=tar.gz",
                 f"--prefix={source.name}/", f"--output={archive}", "FETCH_HEAD")
         run("tar", "-xf", archive, "-C", work)
+        # Supplementary orig components travel with the Debian source package on
+        # every target. debian/rules selects the fallback only where it is needed.
+        add_components(package, checkout, work, source)
         copyright_text = (source / package["copyright"]).read_text()
         if package.get("upstream_packaging"):
             prepare_packaging(source, name)
@@ -78,6 +106,11 @@ def build(suite, only=None):
         else:
             shutil.copytree(ROOT / "packaging" / name, source / "debian")
         shutil.copytree(ROOT / "packaging" / name, source / "debian", dirs_exist_ok=True)
+        for component in package.get("components", []):
+            provenance = f"{component['name']}.json"
+            (source / "debian" / provenance).write_text(json.dumps(component, indent=2) + "\n")
+            with (source / "debian" / f"{name}.docs").open("a") as docs:
+                docs.write(f"debian/{provenance}\n")
         if not (source / "debian" / "copyright").exists():
             (source / "debian" / "copyright").write_text(copyright_text)
         (source / "debian" / "source").mkdir(exist_ok=True)
@@ -102,7 +135,7 @@ def build(suite, only=None):
         run("apt-get", "install", "-y", "--no-install-recommends", *binaries)
         patterns = ["*.deb", "*.buildinfo", "*.changes"]
         if arch == "arm64":
-            patterns += ["*.dsc", "*.orig.tar.*", "*.debian.tar.*"]
+            patterns += ["*.dsc", "*.orig*.tar.*", "*.debian.tar.*"]
         for pattern in patterns:
             for artifact in work.glob(pattern):
                 shutil.copy2(artifact, output / artifact.name)
