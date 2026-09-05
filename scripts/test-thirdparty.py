@@ -2,7 +2,11 @@
 """Validate installed third-party payloads without connecting physical devices."""
 
 from pathlib import Path
+import os
+import signal
 import subprocess
+import tempfile
+import time
 import xml.etree.ElementTree as ET
 
 
@@ -14,12 +18,15 @@ def check():
         notices = Path("/usr/share/doc") / package / "upstream-notices"
         assert (notices / "INDEX").is_file(), f"Missing notices for {package}"
         assert (notices / "libasi/license.txt").is_file(), "Missing vendor redistribution notice"
+    assert not any("NOTFOUND" in path for path in paths), "Unresolved CMake installation directory"
     # Make a silently disabled major driver or missing SDK a test failure.
     required = ["indi_asi_ccd", "indi_qhy_ccd", "indi_atik_ccd", "indi_playerone_ccd",
                 "indi_toupcam_ccd", "indi_eqmod_telescope", "indi_gphoto_ccd",
                 "indi_sbig_ccd", "indi_qsi_ccd", "indi_fli_ccd", "indi_sx_ccd"]
     for driver in required:
         assert Path("/usr/bin", driver).is_file(), f"Missing {driver}"
+    for definition in ("indi_asi.xml", "indi_qhy.xml", "indi_eqmod.xml", "indi_playerone.xml"):
+        assert Path("/usr/share/indi", definition).is_file(), f"Missing {definition}"
     for rule in ("99-asi.rules", "85-qhyccd.rules"):
         assert Path("/usr/lib/udev/rules.d", rule).is_file(), f"Missing {rule}"
     assert any(Path("/usr/lib/firmware/qhy").iterdir()), "Missing QHY firmware"
@@ -51,6 +58,29 @@ def check():
             if node.text and node.text.strip():
                 assert Path("/usr/bin", node.text.strip()).is_file(), f"Uninstalled driver in {path}: {node.text}"
     print(f"Validated {count} ARM64 ELF files, driver definitions, firmware and license notices")
+    # Exercise a real third-party driver without connecting to a mount.
+    with tempfile.TemporaryFile(mode="w+") as log:
+        server = subprocess.Popen(["indiserver", "-r", "0", "-p", "17624", "indi_eqmod_telescope"],
+                                  stdout=log, stderr=log, start_new_session=True)
+        try:
+            for _ in range(10):
+                result = subprocess.run(["indi_getprop", "-p", "17624", "-t", "2", "EQMod Mount.CONNECTION.*"],
+                                        text=True, capture_output=True, timeout=5)
+                if result.returncode == 0 and "DISCONNECT=On" in result.stdout:
+                    print("EQMod answered an INDI property query without attached hardware")
+                    break
+                if server.poll() is not None:
+                    raise RuntimeError("EQMod server exited")
+                time.sleep(0.5)
+            else:
+                log.seek(0)
+                raise RuntimeError("EQMod did not respond:\n" + log.read())
+        finally:
+            try:
+                os.killpg(server.pid, signal.SIGTERM)
+            except ProcessLookupError:
+                pass
+            server.wait(timeout=5)
 
 
 if __name__ == "__main__":

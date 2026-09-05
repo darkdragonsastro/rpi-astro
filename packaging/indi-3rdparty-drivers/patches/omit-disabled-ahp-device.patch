@@ -1,0 +1,18 @@
+Description: Do not advertise the default-disabled AHP GT driver in Ekos
+ AHP support is disabled because its dependencies are not part of the pinned
+ default upstream build. Keep the device registry consistent with the binaries.
+Author: RPi Astro maintainers <maintainers@darkdragonsastro.org>
+Forwarded: no
+--- a/indi-eqmod/indi_eqmod.xml.cmake
++++ b/indi-eqmod/indi_eqmod.xml.cmake
+@@ -21,10 +21,6 @@
+                 <driver name="Star Adventurer 2i">indi_staradventurer2i_telescope</driver>
+                 <version>@EQMOD_VERSION_MAJOR@.@EQMOD_VERSION_MINOR@</version>
+         </device>
+-        <device label="AHP GT Mount" manufacturer="AHP">
+-                <driver name="AHP GT Mount">indi_ahpgt_telescope</driver>
+-                <version>@EQMOD_VERSION_MAJOR@.@EQMOD_VERSION_MINOR@</version>
+-        </device>
+         <device label="Wave 150i" manufacturer="SkyWatcher">
+                 <driver name="EQMod Mount">indi_eqmod_telescope</driver>
+                 <version>@EQMOD_VERSION_MAJOR@.@EQMOD_VERSION_MINOR@</version>
