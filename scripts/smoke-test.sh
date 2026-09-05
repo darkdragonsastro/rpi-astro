@@ -18,7 +18,7 @@ fi
 indiserver indi_simulator_telescope &
 server_pid=$!
 trap 'kill "$server_pid" 2>/dev/null || true' EXIT
-for attempt in {1..20}; do
+for _ in {1..20}; do
   if indi_getprop -t 2 '*.CONNECTION.*'; then
     exit 0
   fi
