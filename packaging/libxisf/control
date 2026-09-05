@@ -1,0 +1,23 @@
+Source: libxisf
+Section: libs
+Priority: optional
+Maintainer: RPi Astro maintainers <maintainers@darkdragonsastro.org>
+Build-Depends: debhelper-compat (= 13), cmake, pkg-config, zlib1g-dev, liblz4-dev, libpugixml-dev, libzstd-dev
+Standards-Version: 4.6.2
+Rules-Requires-Root: no
+Homepage: https://gitea.nouspiro.space/nou/libXISF
+
+Package: libxisf0
+Architecture: any
+Multi-Arch: same
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: XISF image format library
+ Read and write astronomical images in XISF format.
+
+Package: libxisf-dev
+Section: libdevel
+Architecture: any
+Multi-Arch: same
+Depends: libxisf0 (= ${binary:Version}), ${misc:Depends}, zlib1g-dev, liblz4-dev, libpugixml-dev, libzstd-dev
+Description: development files for the XISF image library
+ Headers and linker files for applications using libXISF.

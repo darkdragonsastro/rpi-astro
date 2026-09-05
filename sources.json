@@ -1,0 +1,34 @@
+{
+  "revision": 1,
+  "packages": [
+    {
+      "name": "libxisf",
+      "version": "0.2.13",
+      "url": "https://gitea.nouspiro.space/nou/libXISF.git",
+      "commit": "bfba76a39d2651719228841503b3a84cc5820362",
+      "copyright": "LICENSE"
+    },
+    {
+      "name": "indi",
+      "version": "2.2.4.2",
+      "url": "https://github.com/indilib/indi.git",
+      "commit": "3371faeb07f8fa24bae3edfb44a181853a8e9ce7",
+      "copyright": "debian/copyright"
+    },
+    {
+      "name": "stellarsolver",
+      "version": "2.8",
+      "url": "https://github.com/rlancaste/stellarsolver.git",
+      "commit": "89377481934f40e7a84a8f91f667e37125e47ae0",
+      "copyright": "debian/copyright"
+    },
+    {
+      "name": "kstars",
+      "version": "3.8.4",
+      "epoch": 5,
+      "url": "https://github.com/KDE/kstars.git",
+      "commit": "6116ff47662a6a96694aa03c09e8a1a7660832de",
+      "copyright": "packaging/linux/debian/copyright"
+    }
+  ]
+}

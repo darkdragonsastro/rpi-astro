@@ -1,0 +1,3 @@
+usr/include/*
+usr/lib/*/libXISF.so
+usr/lib/*/pkgconfig/*

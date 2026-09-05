@@ -1,0 +1,62 @@
+Source: indi
+Section: science
+Priority: optional
+Maintainer: RPi Astro maintainers <maintainers@darkdragonsastro.org>
+Build-Depends: debhelper-compat (= 13), cmake, pkg-config, libcfitsio-dev, libnova-dev, libusb-1.0-0-dev, zlib1g-dev, libjpeg-dev, libgsl-dev, liberfa-dev, libcurl4-gnutls-dev, libev-dev, libxisf-dev, libudev-dev, libfftw3-dev
+Standards-Version: 4.6.2
+Rules-Requires-Root: no
+Homepage: https://www.indilib.org
+
+Package: indi-bin
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}, libindi-data (= ${source:Version}), libindi-plugins (= ${binary:Version})
+Description: INDI server, core drivers and command line tools
+ Control astronomical equipment using the INDI protocol.
+ Includes simulated devices for testing without attached hardware.
+
+Package: libindi-data
+Architecture: all
+Multi-Arch: foreign
+Depends: ${misc:Depends}
+Description: shared data for INDI
+ Device definitions for the INDI core drivers.
+
+Package: libindiclient2
+Section: libs
+Architecture: any
+Multi-Arch: same
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: INDI client library
+ Shared library for clients of INDI astronomical devices.
+
+Package: libindidriver2
+Section: libs
+Architecture: any
+Multi-Arch: same
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: INDI driver library
+ Shared driver support and LX200 protocol libraries.
+
+Package: libindialignmentdriver2
+Section: libs
+Architecture: any
+Multi-Arch: same
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: INDI telescope alignment library
+ Telescope alignment support library.
+
+Package: libindi-plugins
+Section: libs
+Architecture: any
+Multi-Arch: same
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: mathematical plugins for INDI telescope alignment
+ Dynamically loaded alignment models for INDI telescope drivers.
+
+Package: libindi-dev
+Section: libdevel
+Architecture: any
+Multi-Arch: same
+Depends: ${misc:Depends}, libindiclient2 (= ${binary:Version}), libindidriver2 (= ${binary:Version}), libindialignmentdriver2 (= ${binary:Version}), libusb-1.0-0-dev
+Description: INDI development files
+ Headers and linker files for building INDI clients and drivers.

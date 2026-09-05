@@ -1,0 +1,108 @@
+name: Build astronomy packages
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: Publish both tested suites to GitHub Pages
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  repository-tests:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo apt-get update && sudo apt-get install -y reprepro gnupg dpkg-dev
+      - run: python3 -m unittest discover -s tests -v
+
+  build:
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 180
+    strategy:
+      fail-fast: false
+      matrix:
+        suite: [bookworm, trixie]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build in the matching Debian environment
+        env:
+          SUITE: ${{ matrix.suite }}
+        run: |
+          docker build --build-arg SUITE="$SUITE" -f containers/Dockerfile -t "rpi-astro:$SUITE" .
+          docker run --rm \
+            -e DEB_BUILD_OPTIONS=parallel=4 \
+            -v "$GITHUB_WORKSPACE:/workspace" \
+            "rpi-astro:$SUITE" python3 scripts/build.py "$SUITE"
+      - name: Test distro upgrade, runtime dependencies and INDI simulator
+        env:
+          SUITE: ${{ matrix.suite }}
+        run: |
+          docker run --rm \
+            -v "$GITHUB_WORKSPACE/dist:/packages:ro" \
+            -v "$GITHUB_WORKSPACE/scripts:/scripts:ro" \
+            "debian:$SUITE" bash /scripts/smoke-test.sh "$SUITE"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: packages-${{ matrix.suite }}
+          path: dist/${{ matrix.suite }}/
+          if-no-files-found: error
+          retention-days: 30
+
+  publish:
+    if: github.event_name == 'workflow_dispatch' && inputs.publish && github.ref == 'refs/heads/main'
+    needs: [repository-tests, build]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: packages-bookworm
+          path: dist/bookworm
+      - uses: actions/download-artifact@v4
+        with:
+          name: packages-trixie
+          path: dist/trixie
+      - run: sudo apt-get update && sudo apt-get install -y reprepro gnupg
+      - uses: actions/configure-pages@v5
+        id: pages
+      - name: Sign and assemble the complete repository
+        env:
+          APT_SIGNING_KEY: ${{ secrets.APT_SIGNING_KEY }}
+          APT_SIGNING_FINGERPRINT: ${{ vars.APT_SIGNING_FINGERPRINT }}
+          BASE_URL: ${{ steps.pages.outputs.base_url }}
+        run: |
+          test -n "$APT_SIGNING_KEY"
+          test -n "$APT_SIGNING_FINGERPRINT"
+          export GNUPGHOME
+          GNUPGHOME=$(mktemp -d)
+          chmod 700 "$GNUPGHOME"
+          trap 'gpgconf --kill all; find "$GNUPGHOME" -type f -delete; rmdir "$GNUPGHOME"/private-keys-v1.d "$GNUPGHOME"/openpgp-revocs.d "$GNUPGHOME" 2>/dev/null || true' EXIT
+          printf '%s' "$APT_SIGNING_KEY" | gpg --batch --import
+          unset APT_SIGNING_KEY
+          python3 scripts/repository.py --base-url "$BASE_URL"
+          for suite in bookworm trixie; do
+            gpg --batch --verify "site/dists/$suite/InRelease"
+          done
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+      - uses: actions/deploy-pages@v4
+        id: deployment

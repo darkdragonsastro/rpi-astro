@@ -1,0 +1,25 @@
+Source: kstars
+Section: science
+Priority: optional
+Maintainer: RPi Astro maintainers <maintainers@darkdragonsastro.org>
+Build-Depends: debhelper-compat (= 13), cmake, pkg-config, extra-cmake-modules, libeigen3-dev, libcfitsio-dev, zlib1g-dev, libindi-dev, libstellarsolver-dev, libxisf-dev, libkf5plotting-dev, libqt5svg5-dev, libkf5xmlgui-dev, libkf5kio-dev, kinit-dev, libkf5newstuff-dev, libkf5notifications-dev, qtdeclarative5-dev, libkf5crash-dev, gettext, libnova-dev, libgsl-dev, libraw-dev, libkf5notifyconfig-dev, wcslib-dev, libqt5websockets5-dev, qt5keychain-dev, libsecret-1-dev, libqt5datavisualization5-dev, libcurl4-gnutls-dev, libkf5doctools-dev, libopencv-dev
+Standards-Version: 4.6.2
+Rules-Requires-Root: no
+Homepage: https://kstars.kde.org
+
+Package: kstars
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}, kstars-data (= ${source:Version}), indi-bin (>= 2.2.4), breeze-icon-theme, libqt5sql5-sqlite, qml-module-qtquick-controls, kinit
+Recommends: xplanet, xplanet-images
+Description: desktop planetarium and Ekos astrophotography suite
+ KStars displays the night sky and includes Ekos for imaging, focusing,
+ guiding and telescope control through INDI.
+
+Package: kstars-data
+Architecture: all
+Multi-Arch: foreign
+Depends: ${misc:Depends}
+Breaks: kstars (<< ${source:Version})
+Replaces: kstars (<< ${source:Version})
+Description: data files for KStars
+ Star catalogues, images, translations and documentation for KStars.

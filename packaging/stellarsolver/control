@@ -1,0 +1,23 @@
+Source: stellarsolver
+Section: libs
+Priority: optional
+Maintainer: RPi Astro maintainers <maintainers@darkdragonsastro.org>
+Build-Depends: debhelper-compat (= 13), cmake, pkg-config, qtbase5-dev, libcfitsio-dev, wcslib-dev, libgsl-dev, zlib1g-dev
+Standards-Version: 4.6.2
+Rules-Requires-Root: no
+Homepage: https://github.com/rlancaste/stellarsolver
+
+Package: libstellarsolver2
+Architecture: any
+Multi-Arch: same
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: astronomical plate solving library using Qt 5
+ StellarSolver extracts stars and solves astronomical images.
+
+Package: libstellarsolver-dev
+Section: libdevel
+Architecture: any
+Multi-Arch: same
+Depends: libstellarsolver2 (= ${binary:Version}), ${misc:Depends}, qtbase5-dev
+Description: development files for StellarSolver
+ Headers and build configuration for the Qt 5 StellarSolver library.
