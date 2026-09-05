@@ -4,6 +4,7 @@ import tempfile
 import unittest
 import os
 import runpy
+from unittest.mock import patch
 
 spec = importlib.util.spec_from_file_location("thirdparty", Path(__file__).resolve().parents[1] / "scripts/thirdparty.py")
 thirdparty = importlib.util.module_from_spec(spec)
@@ -11,6 +12,36 @@ spec.loader.exec_module(thirdparty)
 
 
 class ThirdPartyPackagingTests(unittest.TestCase):
+    def test_qhy_exclusion_payload_check(self):
+        script = Path(__file__).resolve().parents[1] / "scripts/test-thirdparty.py"
+        check = runpy.run_path(str(script))["check_qhy_excluded"]
+        check(["/usr/bin/indi_asi_ccd", "/usr/share/doc/indi-3rdparty-libs/upstream-notices/debian/libqhy/copyright"])
+        for payload in ("/usr/bin/indi_qhy_ccd", "/usr/bin/qhy_ccd_test",
+                        "/usr/lib/x86_64-linux-gnu/libqhyccd.so.20", "/usr/include/libqhy/qhyccd.h",
+                        "/usr/lib/firmware/qhy/QHY268.img", "/usr/lib/udev/rules.d/85-qhyccd.rules",
+                        "/usr/share/indi/indi_qhy.xml"):
+            with self.subTest(payload=payload), self.assertRaisesRegex(AssertionError, "Unexpected QHY payload"):
+                check([payload])
+
+    def test_rule_adaptation_without_qhy(self):
+        script = Path(__file__).resolve().parents[1] / "packaging/indi-3rdparty-libs/fix-udev.py"
+        with tempfile.TemporaryDirectory() as folder:
+            rules = Path(folder) / "debian/indi-3rdparty-libs/usr/lib/udev/rules.d"
+            rules.mkdir(parents=True)
+            original = 'ASI camera\n# Set permissions for USB bind/unbind operations\nunsafe\n# access EFWmini\nfilter wheel\n'
+            (rules / "99-asi.rules").write_text(original)
+            previous = Path.cwd()
+            try:
+                os.chdir(folder)
+                with patch.dict(os.environ, {"RPI_ASTRO_WITH_QHY": "OFF"}):
+                    runpy.run_path(str(script))
+                    self.assertNotIn("unsafe", (rules / "99-asi.rules").read_text())
+                    (rules / "85-qhyccd.rules").write_text("unexpected rule\n")
+                    with self.assertRaisesRegex(AssertionError, "QHY rules installed"):
+                        runpy.run_path(str(script))
+            finally:
+                os.chdir(previous)
+
     def test_camera_rule_adaptation(self):
         script = Path(__file__).resolve().parents[1] / "packaging/indi-3rdparty-libs/fix-udev.py"
         with tempfile.TemporaryDirectory() as folder:

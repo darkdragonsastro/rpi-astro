@@ -67,8 +67,7 @@ class ComponentTests(unittest.TestCase):
 
     @unittest.skipUnless(shutil.which("dpkg-parsechangelog") and Path("/usr/share/dpkg/architecture.mk").exists(),
                          "Requires Debian packaging tools")
-    def test_fallback_selected_only_for_bookworm_amd64(self):
-        rules = ROOT / "packaging/indi-3rdparty-libs/rules"
+    def test_qhy_excluded_only_for_bookworm_amd64(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             (root / "debian").mkdir()
@@ -77,8 +76,11 @@ class ComponentTests(unittest.TestCase):
                     f"fixture (1.0-1) {suite}; urgency=low\n\n  * Test.\n\n"
                     " -- Test <test@example.invalid>  Fri, 04 Sep 2026 12:00:00 +0000\n")
                 for architecture in ("arm64", "amd64"):
-                    result = subprocess.check_output(
-                        ["make", "-n", "-f", str(rules), f"DEB_HOST_ARCH={architecture}", "override_dh_auto_configure"],
-                        cwd=root, text=True)
-                    expected = "ON" if (suite, architecture) == ("bookworm", "amd64") else "OFF"
-                    self.assertIn(f"-DRPI_ASTRO_QHY_BOOKWORM={expected}", result)
+                    for package in ("indi-3rdparty-libs", "indi-3rdparty-drivers"):
+                        rules = ROOT / "packaging" / package / "rules"
+                        result = subprocess.check_output(
+                            ["make", "-n", "-f", str(rules), f"DEB_HOST_ARCH={architecture}", "override_dh_auto_configure"],
+                            cwd=root, text=True)
+                        expected = "OFF" if (suite, architecture) == ("bookworm", "amd64") else "ON"
+                        self.assertIn(f"-DWITH_QHY={expected}", result)
+                        self.assertNotIn("RPI_ASTRO_QHY_BOOKWORM", result)

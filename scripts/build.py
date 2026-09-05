@@ -92,7 +92,7 @@ def build(suite, only=None):
                 f"--prefix={source.name}/", f"--output={archive}", "FETCH_HEAD")
         run("tar", "-xf", archive, "-C", work)
         # Supplementary orig components travel with the Debian source package on
-        # every target. debian/rules selects the fallback only where it is needed.
+        # every target when requested by the manifest.
         add_components(package, checkout, work, source)
         copyright_text = (source / package["copyright"]).read_text()
         if package.get("upstream_packaging"):

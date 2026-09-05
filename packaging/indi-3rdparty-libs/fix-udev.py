@@ -1,16 +1,20 @@
 """Adapt staged camera rules: working FX3 loader and no global USB permissions."""
 from pathlib import Path
+import os
 
 rules = Path("debian/indi-3rdparty-libs/usr/lib/udev/rules.d")
 qhy = rules / "85-qhyccd.rules"
-text = qhy.read_text()
-assert "/sbin/fxload" in text and "-D $env{DEVNAME}" in text
-# This pinned release references QHY492.img but does not ship that firmware.
-# Do not run a guaranteed-failing upload; keep the general QHY permission rules.
-text = "\n".join(line for line in text.splitlines() if "QHY492.img" not in line) + "\n"
-qhy.write_text(text.replace("/sbin/fxload", "/usr/lib/rpi-astro/fxload")
-              .replace("-D $env{DEVNAME}", "-p $env{BUSNUM},$env{DEVNUM}")
-              .replace(" /lib/firmware/qhy/", " /usr/lib/firmware/qhy/"))
+if os.environ.get("RPI_ASTRO_WITH_QHY", "ON") == "OFF":
+    assert not qhy.exists(), "QHY rules installed despite WITH_QHY=OFF"
+else:
+    text = qhy.read_text()
+    assert "/sbin/fxload" in text and "-D $env{DEVNAME}" in text
+    # This pinned release references QHY492.img but does not ship that firmware.
+    # Do not run a guaranteed-failing upload; keep the general QHY permission rules.
+    text = "\n".join(line for line in text.splitlines() if "QHY492.img" not in line) + "\n"
+    qhy.write_text(text.replace("/sbin/fxload", "/usr/lib/rpi-astro/fxload")
+                  .replace("-D $env{DEVNAME}", "-p $env{BUSNUM},$env{DEVNUM}")
+                  .replace(" /lib/firmware/qhy/", " /usr/lib/firmware/qhy/"))
 asi = rules / "99-asi.rules"
 text = asi.read_text()
 start = text.index("# Set permissions for USB bind/unbind operations")
