@@ -2,7 +2,7 @@
 
 An open, signed APT repository for astronomy software on **64-bit Raspberry Pi OS Bookworm and Trixie**. Packages are built from pinned upstream sources on GitHub Actions ARM64 runners, separately inside each matching Debian release.
 
-This project is being bootstrapped. A successful package build is not a hardware certification; real camera, mount and imaging-session tests remain necessary before relying on a release in the field.
+The initial repository is live. Both suites pass ARM64 build, distro-upgrade and INDI-simulator checks. Fresh installations from the public APT endpoint, installed-file integrity and matching source downloads have also been verified in Debian ARM64 containers. Real Raspberry Pi OS desktop, camera, mount and imaging-session tests remain necessary before relying on a release in the field.
 
 | Software | Initial upstream version | Packages |
 | --- | --- | --- |
@@ -15,7 +15,7 @@ Exact revisions and the package revision are in [sources.json](sources.json). Th
 
 ## Install
 
-After the first successful Pages publication, the repository will be at:
+The repository is hosted at:
 
 <https://darkdragonsastro.github.io/rpi-astro/>
 
@@ -51,6 +51,8 @@ To publish, configure Pages to use GitHub Actions and set:
 - Repository variable `APT_SIGNING_FINGERPRINT`: the full public key fingerprint.
 
 Keep a private offline backup and revocation certificate. Publish the fingerprint through a trusted channel. See [operations](docs/operations.md) for key management and release details.
+
+For this initial setup, the local signing-key home and revocation certificate are in the ignored `keys/gnupg/` directory. Back up that directory privately; it must never be committed or uploaded as a public artifact.
 
 Run **Build astronomy packages** manually from `main`, enabling **Publish both tested suites to GitHub Pages**. This builds and tests both suites before assembling and signing the site. One complete Pages deployment contains both suites; a failed build cannot publish a partial update.
 
